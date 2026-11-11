@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added media strategies, which supply the platform primitives the SDK builds media on: peer connections, `getUserMedia`, device enumeration, the silent audio track used when no microphone is selected, and the registration of video and audio elements. `StandardStrategy` uses the browser and is the default, so behaviour is unchanged unless an application supplies another. Supply a strategy through `MeetingSessionConfiguration.strategy` and the `strategy` option of `DefaultDeviceController`. Strategies implement `MediaStrategyInterface`, and `getStrategyName()` returns `STANDARD_STRATEGY` for the default one.
+- Added `PeerConnectionPurpose` and `MediaPurpose`, passed to every strategy call so a strategy can answer differently per call site, for example redirecting the main connection while keeping the codec capability probe and the content share connection in the browser.
+
+### Removed
+
+### Changed
+
+- `DefaultVideoTile.connectVideoStreamToVideoElement` and `DefaultVideoTile.disconnectVideoStreamFromVideoElement` take the strategy as a new optional trailing argument, defaulting to `StandardStrategy`.
+
+### Fixed
+
 ## [3.33.0] - 2026-07-08
 
 ### Added

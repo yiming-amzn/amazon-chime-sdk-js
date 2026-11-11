@@ -163,6 +163,7 @@ import Logger from './logger/Logger';
 import MediaDeviceFactory from './mediadevicefactory/MediaDeviceFactory';
 import MediaDeviceProxyHandler from './mediadevicefactory/MediaDeviceProxyHandler';
 import MediaMetricsEncodedTransformManager from './encodedtransformmanager/MediaMetricsEncodedTransformManager';
+import MediaStrategyInterface from './strategies/MediaStrategyInterface';
 import MediaStreamBroker from './mediastreambroker/MediaStreamBroker';
 import MediaStreamBrokerObserver from './mediastreambrokerobserver/MediaStreamBrokerObserver';
 import MeetingEventsClientConfiguration from './eventsclientconfiguration/MeetingEventsClientConfiguration';
@@ -272,6 +273,7 @@ import SimulcastUplinkObserver from './videouplinkbandwidthpolicy/SimulcastUplin
 import SimulcastUplinkPolicy from './videouplinkbandwidthpolicy/SimulcastUplinkPolicy';
 import SimulcastVideoStreamIndex from './videostreamindex/SimulcastVideoStreamIndex';
 import SingleNodeAudioTransformDevice from './devicecontroller/SingleNodeAudioTransformDevice';
+import StandardStrategy from './strategies/StandardStrategy';
 import StartEncodedTransformWorkerTask from './task/StartEncodedTransformWorkerTask';
 import StreamMetricReport from './clientmetricreport/StreamMetricReport';
 import SubscribeAndReceiveSubscribeAckTask from './task/SubscribeAndReceiveSubscribeAckTask';
@@ -362,6 +364,7 @@ import { BackgroundSegmentationInitializationStatus } from './backgroundsegmenta
 import { BackgroundSegmentationMetricsObserver } from './backgroundsegmentation/BackgroundSegmentationMetrics';
 import { BackgroundSegmentationProcessorMetrics } from './backgroundsegmentation/BackgroundSegmentationMetrics';
 import { BackgroundSegmentationVideoFrameProcessorConfig, BlurStrength as BackgroundSegmentationBlurStrength, ModelType, ProcessorEffect } from './backgroundsegmentation/BackgroundSegmentationConstants';
+import { MediaPurpose, PeerConnectionPurpose, STANDARD_STRATEGY } from './strategies/MediaStrategyInterface';
 import { MeetingSessionSignalingTiming, MeetingSessionRemoteAudioTiming, MeetingSessionLocalAudioTiming, MeetingSessionLocalVideoTiming, MeetingSessionRemoteVideoTiming, MeetingSessionTimingObserver } from './meetingsessiontiming/MeetingSessionTiming';
 import { MutableVideoPreferences } from './videodownlinkbandwidthpolicy/VideoPreferences';
 import { Some, None, Maybe, MaybeProvider, Eq, PartialOrd } from './utils/Types';
@@ -545,6 +548,8 @@ export {
   MediaDeviceFactory,
   MediaDeviceProxyHandler,
   MediaMetricsEncodedTransformManager,
+  MediaPurpose,
+  MediaStrategyInterface,
   MediaStreamBroker,
   MediaStreamBrokerObserver,
   MeetingEventsClientConfiguration,
@@ -605,6 +610,7 @@ export {
   POSTLoggerOptions,
   ParallelGroupTask,
   PartialOrd,
+  PeerConnectionPurpose,
   PermissionDeniedError,
   PingPong,
   PingPongObserver,
@@ -636,6 +642,7 @@ export {
   SDP,
   SDPCandidateType,
   SDPMediaSection,
+  STANDARD_STRATEGY,
   Scheduler,
   SendAndReceiveDataMessagesTask,
   SendingAudioFailureConnectionHealthPolicy,
@@ -666,6 +673,7 @@ export {
   SimulcastVideoStreamIndex,
   SingleNodeAudioTransformDevice,
   Some,
+  StandardStrategy,
   StartEncodedTransformWorkerTask,
   StreamMetricReport,
   SubscribeAndReceiveSubscribeAckTask,

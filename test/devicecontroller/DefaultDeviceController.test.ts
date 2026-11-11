@@ -23,6 +23,7 @@ import EventController from '../../src/eventcontroller/EventController';
 import EventName from '../../src/eventcontroller/EventName';
 import NoOpLogger from '../../src/logger/NoOpLogger';
 import MediaDeviceProxyHandler from '../../src/mediadevicefactory/MediaDeviceProxyHandler';
+import { MediaPurpose } from '../../src/strategies/MediaStrategyInterface';
 import NoOpVideoElementFactory from '../../src/videoelementfactory/NoOpVideoElementFactory';
 import DefaultVideoTransformDevice from '../../src/videoframeprocessor/DefaultVideoTransformDevice';
 import NoOpVideoFrameProcessor from '../../src/videoframeprocessor/NoOpVideoFrameProcessor';
@@ -34,6 +35,7 @@ import DOMMockBuilder, {
 } from '../dommock/DOMMockBuilder';
 import MockError from '../dommock/MockError';
 import UserMediaState from '../dommock/UserMediaState';
+import MockMediaStrategy from '../strategies/MockMediaStrategy';
 import {
   MockNodeTransformDevice,
   MockPassthroughTransformDevice,
@@ -2715,6 +2717,19 @@ describe('DefaultDeviceController', () => {
       expect(connectVideoStreamSpy.calledOnce).to.be.true;
       expect(disconnectVideoStreamSpy.calledOnce).to.be.true;
     });
+
+    it('registers and releases the preview element with the vdi strategy', async () => {
+      const strategy = new MockMediaStrategy();
+      deviceController = new DefaultDeviceController(logger, { strategy });
+      await deviceController.startVideoInput(stringDeviceId);
+
+      deviceController.startVideoPreviewForVideoInput(element);
+      expect(strategy.boundVideoElements.length).to.equal(1);
+      expect(strategy.boundVideoElements[0][0]).to.equal(element);
+
+      deviceController.stopVideoPreviewForVideoInput(element);
+      expect(strategy.unboundVideoElements).to.deep.equal([element]);
+    });
   });
 
   describe('device trigger', () => {
@@ -2949,6 +2964,65 @@ describe('DefaultDeviceController', () => {
     it('Return undefined if the input constraint deviceId is of ideal', () => {
       const constraints: MediaTrackConstraints = { deviceId: { ideal: 'device1' } };
       expect(DefaultDeviceController.getIntrinsicDeviceId(constraints)).to.be.undefined;
+    });
+  });
+
+  describe('media strategy', () => {
+    it('acquires an audio stream through the strategy', async () => {
+      const strategy = new MockMediaStrategy();
+      deviceController = new DefaultDeviceController(logger, { strategy });
+      await deviceController.startAudioInput(stringDeviceId);
+      expect(strategy.mediaPurposes).to.include(MediaPurpose.Microphone);
+    });
+
+    it('acquires a video stream through the strategy', async () => {
+      const strategy = new MockMediaStrategy();
+      deviceController = new DefaultDeviceController(logger, { strategy });
+      await deviceController.startVideoInput(stringDeviceId);
+      expect(strategy.mediaPurposes).to.include(MediaPurpose.Camera);
+    });
+
+    it('enumerates devices through the strategy', async () => {
+      const strategy = new MockMediaStrategy([
+        getMediaDeviceInfo('strategy-mic', 'audioinput', 'Adapter Mic', 'group'),
+      ]);
+      deviceController = new DefaultDeviceController(logger, { strategy });
+      const devices = await deviceController.listAudioInputDevices();
+      expect(strategy.enumerateDevicesCalls).to.be.greaterThan(0);
+      expect(devices.map(device => device.deviceId)).to.deep.equal(['strategy-mic']);
+    });
+
+    it('triggers device labels through the strategy so ids come from one space', async () => {
+      const strategy = new MockMediaStrategy([
+        getMediaDeviceInfo('strategy-mic', 'audioinput', '', 'group'),
+      ]);
+      deviceController = new DefaultDeviceController(logger, { strategy });
+      await deviceController.listAudioInputDevices();
+      expect(strategy.mediaPurposes).to.include(MediaPurpose.PermissionProbe);
+    });
+
+    it('asks the strategy for the silent audio stream when no device is selected', async () => {
+      const strategy = new MockMediaStrategy();
+      deviceController = new DefaultDeviceController(logger, { strategy });
+      await deviceController.startAudioInput(null);
+      expect(strategy.silentAudioStreamCalls).to.equal(1);
+    });
+
+    it('warns and falls back to the browser track when the strategy has no silent stream', async () => {
+      const strategy = new MockMediaStrategy([], null);
+      const watcher = new WatchingLogger('has no silent audio stream');
+      deviceController = new DefaultDeviceController(watcher, { strategy });
+      await deviceController.startAudioInput(null);
+      expect(strategy.silentAudioStreamCalls).to.equal(1);
+      expect(watcher.matches.length).to.be.greaterThan(0);
+    });
+
+    it('uses StandardStrategy when none is supplied', async () => {
+      deviceController = new DefaultDeviceController(logger);
+      const spy = sinon.spy(navigator.mediaDevices, 'getUserMedia');
+      await deviceController.startAudioInput(stringDeviceId);
+      expect(spy.called).to.be.true;
+      spy.restore();
     });
   });
 });

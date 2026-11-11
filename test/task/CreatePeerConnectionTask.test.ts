@@ -9,10 +9,14 @@ import AudioProfile from '../../src/audioprofile/AudioProfile';
 import AudioVideoControllerState from '../../src/audiovideocontroller/AudioVideoControllerState';
 import NoOpAudioVideoController from '../../src/audiovideocontroller/NoOpAudioVideoController';
 import DefaultBrowserBehavior from '../../src/browserbehavior/DefaultBrowserBehavior';
+import ContentShareConstants from '../../src/contentsharecontroller/ContentShareConstants';
 import EncodedTransformWorkerManager from '../../src/encodedtransformmanager/EncodedTransformWorkerManager';
 import NoOpLogger from '../../src/logger/NoOpLogger';
+import MeetingSessionConfiguration from '../../src/meetingsession/MeetingSessionConfiguration';
+import MeetingSessionCredentials from '../../src/meetingsession/MeetingSessionCredentials';
 import MeetingSessionTURNCredentials from '../../src/meetingsession/MeetingSessionTURNCredentials';
 import MeetingSessionTimingManager from '../../src/meetingsessiontiming/MeetingSessionTimingManager';
+import { PeerConnectionPurpose } from '../../src/strategies/MediaStrategyInterface';
 import CreatePeerConnectionTask from '../../src/task/CreatePeerConnectionTask';
 import Task from '../../src/task/Task';
 import DefaultTransceiverController from '../../src/transceivercontroller/DefaultTransceiverController';
@@ -26,6 +30,7 @@ import DefaultVideoTileFactory from '../../src/videotilefactory/DefaultVideoTile
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder, { StoppableMediaStreamTrack } from '../dommock/DOMMockBuilder';
 import SDPMock from '../sdp/SDPMock';
+import MockMediaStrategy from '../strategies/MockMediaStrategy';
 import { createFakeTimers, tick } from '../utils/fakeTimerHelper';
 
 describe('CreatePeerConnectionTask', () => {
@@ -1083,6 +1088,45 @@ describe('CreatePeerConnectionTask', () => {
       expect(logSpy.calledWith('reusing peer connection')).to.be.true;
 
       logSpy.restore();
+    });
+  });
+
+  describe('media strategy', () => {
+    function configurationForAttendee(attendeeId: string): MeetingSessionConfiguration {
+      const configuration = new MeetingSessionConfiguration();
+      configuration.credentials = new MeetingSessionCredentials();
+      configuration.credentials.attendeeId = attendeeId;
+      return configuration;
+    }
+
+    it('asks the strategy for the signaling connection', async () => {
+      const strategy = new MockMediaStrategy();
+      context.meetingSessionConfiguration = configurationForAttendee('attendee');
+      context.meetingSessionConfiguration.strategy = strategy;
+
+      await new CreatePeerConnectionTask(context).run();
+
+      expect(strategy.peerConnectionPurposes).to.deep.equal([PeerConnectionPurpose.Signaling]);
+    });
+
+    it('asks the strategy for the content share connection', async () => {
+      const strategy = new MockMediaStrategy();
+      context.meetingSessionConfiguration = configurationForAttendee(
+        'attendee' + ContentShareConstants.Modality
+      );
+      context.meetingSessionConfiguration.strategy = strategy;
+
+      await new CreatePeerConnectionTask(context).run();
+
+      expect(strategy.peerConnectionPurposes).to.deep.equal([PeerConnectionPurpose.ContentShare]);
+    });
+
+    it('uses StandardStrategy when none is supplied', async () => {
+      context.meetingSessionConfiguration = configurationForAttendee('attendee');
+
+      await new CreatePeerConnectionTask(context).run();
+
+      expect(context.peer).to.be.instanceOf(RTCPeerConnection);
     });
   });
 });

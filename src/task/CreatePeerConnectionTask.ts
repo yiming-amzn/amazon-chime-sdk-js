@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import AudioVideoControllerState from '../audiovideocontroller/AudioVideoControllerState';
+import DefaultModality from '../modality/DefaultModality';
 import RemovableObserver from '../removableobserver/RemovableObserver';
+import MediaStrategyInterface, { PeerConnectionPurpose } from '../strategies/MediaStrategyInterface';
+import StandardStrategy from '../strategies/StandardStrategy';
 import VideoTile from '../videotile/VideoTile';
 import VideoTileState from '../videotile/VideoTileState';
 import BaseTask from './BaseTask';
@@ -100,8 +103,11 @@ export default class CreatePeerConnectionTask extends BaseTask implements Remova
       this.context.logger.info('reusing peer connection');
     } else {
       this.context.logger.info('creating new peer connection');
-      // @ts-ignore
-      this.context.peer = new RTCPeerConnection(configuration);
+
+      this.context.peer = this.strategy().createPeerConnection(
+        configuration,
+        this.peerConnectionPurpose()
+      );
       this.addPeerConnectionEventLogger();
     }
 
@@ -112,6 +118,19 @@ export default class CreatePeerConnectionTask extends BaseTask implements Remova
       this.removeTrackAddedEventListener = null;
     };
     this.context.peer.addEventListener('track', this.trackAddedHandler);
+  }
+
+  private strategy(): MediaStrategyInterface {
+    return this.context.meetingSessionConfiguration?.strategy ?? new StandardStrategy();
+  }
+
+  // The content share attendee owns its own peer connection.
+  private peerConnectionPurpose(): PeerConnectionPurpose {
+    const attendeeId = this.context.meetingSessionConfiguration?.credentials.attendeeId;
+    return attendeeId &&
+      new DefaultModality(attendeeId).hasModality(DefaultModality.MODALITY_CONTENT)
+      ? PeerConnectionPurpose.ContentShare
+      : PeerConnectionPurpose.Signaling;
   }
 
   private trackAddedHandler = (event: RTCTrackEvent): void => {

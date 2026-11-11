@@ -7,6 +7,7 @@ import VideoQualitySettings from '../devicecontroller/VideoQualitySettings';
 import DefaultDevicePixelRatioMonitor from '../devicepixelratiomonitor/DefaultDevicePixelRatioMonitor';
 import DevicePixelRatioWindowSource from '../devicepixelratiosource/DevicePixelRatioWindowSource';
 import Logger from '../logger/Logger';
+import MediaStrategyInterface from '../strategies/MediaStrategyInterface';
 import { Maybe } from '../utils/Types';
 import DefaultVideoElementResolutionMonitor from '../videotile/DefaultVideoElementResolutionMonitor';
 import DefaultVideoTile from '../videotile/DefaultVideoTile';
@@ -27,6 +28,7 @@ export default class DefaultVideoTileController implements VideoTileController {
   private currentPausedTilesByIds: Set<number> = new Set<number>();
   private resolutionObservers = new Set<VideoTileResolutionObserver>();
   keepLastFrameWhenPaused: boolean | undefined = false;
+  strategy: MediaStrategyInterface;
 
   constructor(
     private tileFactory: VideoTileFactory,
@@ -34,6 +36,7 @@ export default class DefaultVideoTileController implements VideoTileController {
     private logger: Logger
   ) {
     this.keepLastFrameWhenPaused = audioVideoController.configuration.keepLastFrameWhenPaused;
+    this.strategy = audioVideoController.configuration.strategy;
   }
 
   private createDevicePixelRatioMonitorIfNeeded(): void {
@@ -86,7 +89,12 @@ export default class DefaultVideoTileController implements VideoTileController {
     tile.bindVideoElement(null);
     if (cleanUpVideoElement) {
       this.logger.info('Cleaning up the video element');
-      DefaultVideoTile.disconnectVideoStreamFromVideoElement(videoElement, false);
+      DefaultVideoTile.disconnectVideoStreamFromVideoElement(
+        videoElement,
+        false,
+        undefined,
+        this.strategy
+      );
     }
   }
 

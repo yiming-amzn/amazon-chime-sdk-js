@@ -85,6 +85,7 @@ import DefaultWebSocketAdapter from '../../src/websocketadapter/DefaultWebSocket
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
 import ChromeSDPMock from '../sdp/ChromeSDPMock';
+import MockMediaStrategy from '../strategies/MockMediaStrategy';
 import { createFakeTimers, tick as tickHelper } from '../utils/fakeTimerHelper';
 
 const defaultDelay = new DOMMockBehavior().asyncWaitMs * 5;
@@ -4497,6 +4498,46 @@ describe('DefaultAudioVideoController', () => {
       );
 
       expect(mediaStreamBroker).to.equal(audioVideoController.mediaStreamBroker);
+    });
+  });
+
+  describe('media strategy', () => {
+    it('gives the configured strategy to the audio mix controller', async () => {
+      const strategy = new MockMediaStrategy();
+      configuration.strategy = strategy;
+      audioVideoController = new DefaultAudioVideoController(
+        configuration,
+        new NoOpDebugLogger(),
+        webSocketAdapter,
+        new NoOpMediaStreamBroker(),
+        reconnectController
+      );
+
+      const element = new HTMLAudioElement();
+      const stream = new MediaStream();
+      await audioVideoController.audioMixController.bindAudioElement(element);
+      await audioVideoController.audioMixController.bindAudioStream(stream);
+
+      expect(strategy.boundAudioElements.length).to.equal(1);
+      expect(strategy.boundAudioElements[0][0]).to.equal(element);
+      expect(strategy.boundAudioElements[0][1]).to.equal(stream);
+    });
+
+    it('uses StandardStrategy for the audio mix controller when none is configured', async () => {
+      audioVideoController = new DefaultAudioVideoController(
+        configuration,
+        new NoOpDebugLogger(),
+        webSocketAdapter,
+        new NoOpMediaStreamBroker(),
+        reconnectController
+      );
+
+      const element = new HTMLAudioElement();
+      const stream = new MediaStream();
+      await audioVideoController.audioMixController.bindAudioElement(element);
+      await audioVideoController.audioMixController.bindAudioStream(stream);
+
+      expect(element.srcObject).to.equal(stream);
     });
   });
 

@@ -9,11 +9,13 @@ import NoOpAudioVideoController from '../../src/audiovideocontroller/NoOpAudioVi
 import DevicePixelRatioMonitor from '../../src/devicepixelratiomonitor/DevicePixelRatioMonitor';
 import DevicePixelRatioObserver from '../../src/devicepixelratioobserver/DevicePixelRatioObserver';
 import TimeoutScheduler from '../../src/scheduler/TimeoutScheduler';
+import StandardStrategy from '../../src/strategies/StandardStrategy';
 import NoOpVideoElementFactory from '../../src/videoelementfactory/NoOpVideoElementFactory';
 import DefaultVideoTile from '../../src/videotile/DefaultVideoTile';
 import VideoTileController from '../../src/videotilecontroller/VideoTileController';
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
+import MockMediaStrategy from '../strategies/MockMediaStrategy';
 
 class InvokingDevicePixelRatioMonitor implements DevicePixelRatioMonitor {
   private observerQueue: Set<DevicePixelRatioObserver>;
@@ -597,6 +599,103 @@ describe('DefaultVideoTile', () => {
       const image = tile.capture();
       expect(image.width).to.equal(videoElement.width);
       expect(image.height).to.equal(videoElement.height);
+    });
+  });
+
+  describe('media strategy element binding', () => {
+    it('registers the element with the strategy before assigning the stream', () => {
+      const strategy = new MockMediaStrategy();
+      tileController.strategy = strategy;
+      tile = new DefaultVideoTile(tileId, true, tileController, monitor);
+
+      const videoElement = videoElementFactory.create();
+      tile.bindVideoElement(videoElement);
+      tile.bindVideoStream('attendee', true, mockVideoStream, 1, 1, 1);
+
+      expect(strategy.boundVideoElements.length).to.equal(1);
+      expect(strategy.boundVideoElements[0][0]).to.equal(videoElement);
+      expect(strategy.boundVideoElements[0][1]).to.equal(mockVideoStream);
+      // The element still carried the factory's initial value, so the call landed
+      // ahead of the assignment rather than after it.
+      expect(strategy.srcObjectAtBindTime[0]).to.not.equal(mockVideoStream);
+      expect(videoElement.srcObject).to.equal(mockVideoStream);
+    });
+
+    it('releases the element with the strategy when the stream is cleared', () => {
+      const strategy = new MockMediaStrategy();
+      tileController.strategy = strategy;
+      tile = new DefaultVideoTile(tileId, true, tileController, monitor);
+
+      const videoElement = videoElementFactory.create();
+      tile.bindVideoElement(videoElement);
+      tile.bindVideoStream('attendee', true, mockVideoStream, 1, 1, 1);
+      tile.bindVideoStream('attendee', true, null, 1, 1, 1);
+
+      expect(strategy.unboundVideoElements).to.deep.equal([videoElement]);
+      expect(videoElement.srcObject).to.equal(null);
+    });
+
+    it('keeps the element registered when a pause leaves the last frame in place', () => {
+      const strategy = new MockMediaStrategy();
+      tileController.strategy = strategy;
+      tileController.keepLastFrameWhenPaused = true;
+      tile = new DefaultVideoTile(tileId, false, tileController, monitor);
+
+      const videoElement = videoElementFactory.create();
+      tile.bindVideoElement(videoElement);
+      tile.bindVideoStream('attendee', false, mockVideoStream, 1, 1, 1);
+      tile.pause();
+
+      expect(strategy.unboundVideoElements.length).to.equal(0);
+      expect(videoElement.srcObject).to.equal(mockVideoStream);
+    });
+
+    it('releases the element on a pause that clears the stream', () => {
+      const strategy = new MockMediaStrategy();
+      tileController.strategy = strategy;
+      tileController.keepLastFrameWhenPaused = false;
+      tile = new DefaultVideoTile(tileId, false, tileController, monitor);
+
+      const videoElement = videoElementFactory.create();
+      tile.bindVideoElement(videoElement);
+      tile.bindVideoStream('attendee', false, mockVideoStream, 1, 1, 1);
+      tile.pause();
+
+      expect(strategy.unboundVideoElements).to.deep.equal([videoElement]);
+    });
+
+    it('releases the element when the tile is destroyed', () => {
+      const strategy = new MockMediaStrategy();
+      tileController.strategy = strategy;
+      tile = new DefaultVideoTile(tileId, true, tileController, monitor);
+
+      const videoElement = videoElementFactory.create();
+      tile.bindVideoElement(videoElement);
+      tile.bindVideoStream('attendee', true, mockVideoStream, 1, 1, 1);
+      tile.destroy();
+
+      expect(strategy.unboundVideoElements).to.deep.equal([videoElement]);
+    });
+
+    it('only assigns srcObject with StandardStrategy', () => {
+      tileController.strategy = new StandardStrategy();
+      tile = new DefaultVideoTile(tileId, true, tileController, monitor);
+
+      const videoElement = videoElementFactory.create();
+      tile.bindVideoElement(videoElement);
+      tile.bindVideoStream('attendee', true, mockVideoStream, 1, 1, 1);
+      expect(videoElement.srcObject).to.equal(mockVideoStream);
+
+      tile.bindVideoStream('attendee', true, null, 1, 1, 1);
+      expect(videoElement.srcObject).to.equal(null);
+    });
+
+    it('defaults the static helpers to StandardStrategy', () => {
+      const videoElement = videoElementFactory.create();
+      DefaultVideoTile.connectVideoStreamToVideoElement(mockVideoStream, videoElement, true);
+      expect(videoElement.srcObject).to.equal(mockVideoStream);
+      DefaultVideoTile.disconnectVideoStreamFromVideoElement(videoElement, false);
+      expect(videoElement.srcObject).to.equal(null);
     });
   });
 
