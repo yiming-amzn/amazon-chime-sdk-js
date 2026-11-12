@@ -577,6 +577,12 @@ export default class DefaultTransceiverController implements TransceiverControll
       transceiver.direction = 'inactive';
     }
 
+    // Skip the no-op replaceTrack(null) on an empty sender; some redirecting
+    // platforms reject a null track.
+    if (!track && !transceiver.sender.track) {
+      return;
+    }
+
     await transceiver.sender.replaceTrack(track);
   }
 
