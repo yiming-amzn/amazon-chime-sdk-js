@@ -6,6 +6,7 @@ import BrowserBehavior from '../browserbehavior/BrowserBehavior';
 import EncodedTransformWorkerManager from '../encodedtransformmanager/EncodedTransformWorkerManager';
 import Logger from '../logger/Logger';
 import RedundantAudioRecoveryMetricsObserver from '../redundantaudiorecoverymetricsobserver/RedundantAudioRecoveryMetricsObserver';
+import SDP from '../sdp/SDP';
 import VideoStreamIdSet from '../videostreamidset/VideoStreamIdSet';
 import VideoStreamIndex from '../videostreamindex/VideoStreamIndex';
 import TransceiverController from './TransceiverController';
@@ -488,7 +489,41 @@ export default class DefaultTransceiverController implements TransceiverControll
   }
 
   getMidForStreamId(streamId: number): string | undefined {
-    return this.streamIdToTransceiver.get(streamId)?.mid;
+    const transceiver = this.streamIdToTransceiver.get(streamId);
+    if (!transceiver) {
+      return undefined;
+    }
+    if (transceiver.mid) {
+      return transceiver.mid;
+    }
+    // A redirecting platform may bind `mid` asynchronously, so it can still be
+    // unset after setLocalDescription. Derive it from the local description.
+    const derived = this.deriveMid(transceiver);
+    this.logger.warn(`transceiver for stream ${streamId} has no mid; derived ${derived}`);
+    return derived;
+  }
+
+  // Transceivers that report a mid claim their SDP sections. The remaining SDP
+  // mids, in order, pair with the mid-less transceivers, in order. Not by array
+  // index: a platform may omit inactive transceivers from getTransceivers().
+  private deriveMid(transceiver: RTCRtpTransceiver): string | undefined {
+    const sdp = this.peer?.localDescription?.sdp;
+    if (!sdp) {
+      return undefined;
+    }
+    const transceivers = this.peer.getTransceivers();
+    const claimed = new Set(transceivers.map(t => t.mid).filter(mid => !!mid));
+    const unclaimed = new SDP(sdp)
+      .mediaSections()
+      .map(section => section.mid)
+      .filter(mid => !!mid && !claimed.has(mid));
+    const midless = transceivers.filter(t => !t.mid);
+    const index = midless.indexOf(transceiver);
+    if (index >= 0) {
+      return unclaimed[index];
+    }
+    // Proxy objects may not keep a stable identity across getTransceivers().
+    return unclaimed.length === 1 ? unclaimed[0] : undefined;
   }
 
   setStreamIdForMid(mid: string, newStreamId: number): void {
