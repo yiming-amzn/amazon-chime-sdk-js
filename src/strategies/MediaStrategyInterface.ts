@@ -21,6 +21,7 @@ export enum MediaPurpose {
 
 /** Values returned by `getStrategyName()`. */
 export const STANDARD_STRATEGY = 'StandardStrategy';
+export const CITRIX_VDI_STRATEGY = 'CitrixVDIStrategy';
 
 /** True when `strategy` redirects media away from the browser. */
 export function isVDIStrategy(strategy: MediaStrategyInterface): boolean {
@@ -29,7 +30,8 @@ export function isVDIStrategy(strategy: MediaStrategyInterface): boolean {
 
 /**
  * The platform primitives the SDK builds media on. [[StandardStrategy]] uses the
- * browser and is the default; a VDI strategy redirects media to the endpoint.
+ * browser and is the default; a VDI strategy such as [[CitrixVDIStrategy]]
+ * redirects media to the endpoint.
  * Each method takes a purpose because some call sites must stay native even
  * when the rest is redirected. See the Media Strategies guide.
  */

@@ -182,7 +182,8 @@ walk('src')
     // A strategy implemented outside the SDK needs the purpose enums and
     // strategy names, not just the interface.
     if (typeToImport === 'MediaStrategyInterface') {
-      importStrings.push(`import { MediaPurpose, PeerConnectionPurpose, STANDARD_STRATEGY } from '${pathToImport}/MediaStrategyInterface';`);
+      importStrings.push(`import { CITRIX_VDI_STRATEGY, MediaPurpose, PeerConnectionPurpose, STANDARD_STRATEGY } from '${pathToImport}/MediaStrategyInterface';`);
+      exportStrings.push(`CITRIX_VDI_STRATEGY`);
       exportStrings.push(`STANDARD_STRATEGY`);
       exportStrings.push(`MediaPurpose`);
       exportStrings.push(`PeerConnectionPurpose`);
