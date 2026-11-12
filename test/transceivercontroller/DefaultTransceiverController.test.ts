@@ -552,6 +552,81 @@ describe('DefaultTransceiverController', () => {
       expect(tc.getMidForGroupId(1)).to.equal('1');
     });
 
+    describe('when a transceiver reports no mid', () => {
+      const sdp = [
+        'v=0',
+        'm=audio 9 UDP/TLS/RTP/SAVPF 111',
+        'a=mid:0',
+        'm=video 9 UDP/TLS/RTP/SAVPF 96',
+        'a=mid:1',
+        'm=video 9 UDP/TLS/RTP/SAVPF 96',
+        'a=mid:2',
+        '',
+      ].join('\r\n');
+
+      function setPeer(
+        transceivers: { mid: string | null }[],
+        localSdp: string | null = sdp
+      ): void {
+        const peer = {
+          localDescription: localSdp === null ? null : { sdp: localSdp },
+          getTransceivers: () => transceivers,
+        };
+        // @ts-ignore
+        tc.peer = peer;
+      }
+
+      function mapStream(streamId: number, transceiver: { mid: string | null }): void {
+        // @ts-ignore
+        tc.streamIdToTransceiver.set(streamId, transceiver);
+      }
+
+      it('pairs unclaimed SDP mids with mid-less transceivers in order', () => {
+        const audio = { mid: '0' };
+        const first = { mid: null as string | null };
+        const second = { mid: null as string | null };
+        setPeer([audio, first, second]);
+        mapStream(1, first);
+        mapStream(2, second);
+        expect(tc.getMidForStreamId(1)).to.equal('1');
+        expect(tc.getMidForStreamId(2)).to.equal('2');
+      });
+
+      it('skips SDP mids already claimed by another transceiver', () => {
+        const claimed = { mid: '1' };
+        const midless = { mid: null as string | null };
+        setPeer([claimed, midless]);
+        mapStream(1, midless);
+        expect(tc.getMidForStreamId(1)).to.equal('0');
+      });
+
+      it('uses the only unclaimed mid when the transceiver identity is not stable', () => {
+        setPeer([{ mid: '0' }, { mid: '1' }]);
+        mapStream(1, { mid: null });
+        expect(tc.getMidForStreamId(1)).to.equal('2');
+      });
+
+      it('returns undefined when the transceiver cannot be matched', () => {
+        setPeer([{ mid: '0' }]);
+        mapStream(1, { mid: null });
+        expect(tc.getMidForStreamId(1)).to.equal(undefined);
+      });
+
+      it('returns undefined when there is no local description', () => {
+        const midless = { mid: null as string | null };
+        setPeer([midless], null);
+        mapStream(1, midless);
+        expect(tc.getMidForStreamId(1)).to.equal(undefined);
+      });
+
+      it('returns undefined when there is no peer', () => {
+        // @ts-ignore
+        tc.peer = null;
+        mapStream(1, { mid: null });
+        expect(tc.getMidForStreamId(1)).to.equal(undefined);
+      });
+    });
+
     it('will allow overriding the mapping of stream id to mid', () => {
       const videoStreamIndex = prepareIndex([1, 4]);
       const videosToReceive: VideoStreamIdSet = new DefaultVideoStreamIdSet([1]);

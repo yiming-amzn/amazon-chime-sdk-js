@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed remote video staying black when a transceiver reports no `mid` after `setLocalDescription`, as Citrix redirected transceivers can. The `mid` is now derived from the local description.
 - With a strategy other than `StandardStrategy`, encoded transforms are skipped on senders and receivers that are not native `RTCRtpSender` or `RTCRtpReceiver` objects instead of throwing. Without one, the SDK still throws as before.
 
 ## [3.33.0] - 2026-07-08
