@@ -3,6 +3,7 @@
 
 /** Values returned by `getStrategyName()`. */
 export const STANDARD_STRATEGY = 'StandardStrategy';
+export const CITRIX_VDI_STRATEGY = 'CitrixVDIStrategy';
 
 /** True when `strategy` redirects media away from the browser. */
 export function isVDIStrategy(strategy: MediaStrategy): boolean {
@@ -11,8 +12,8 @@ export function isVDIStrategy(strategy: MediaStrategy): boolean {
 
 /**
  * The platform primitives the SDK builds media on. [[StandardStrategy]] uses the
- * browser and is the default; a VDI strategy redirects media to the endpoint.
- * See the Media Strategies guide.
+ * browser and is the default; a VDI strategy such as [[CitrixVDIStrategy]]
+ * redirects media to the endpoint. See the Media Strategies guide.
  */
 export default interface MediaStrategy {
   /** One of the `*_STRATEGY` names. */

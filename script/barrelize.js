@@ -180,7 +180,8 @@ walk('src')
     }
 
     if (typeToImport === 'MediaStrategy') {
-      importStrings.push(`import { STANDARD_STRATEGY } from '${pathToImport}/MediaStrategy';`);
+      importStrings.push(`import { CITRIX_VDI_STRATEGY, STANDARD_STRATEGY } from '${pathToImport}/MediaStrategy';`);
+      exportStrings.push(`CITRIX_VDI_STRATEGY`);
       exportStrings.push(`STANDARD_STRATEGY`);
     }
   });

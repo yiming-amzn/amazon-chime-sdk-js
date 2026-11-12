@@ -57,6 +57,7 @@ import CheckNetworkTCPConnectivityFeedback from './meetingreadinesschecker/Check
 import CheckNetworkUDPConnectivityFeedback from './meetingreadinesschecker/CheckNetworkUDPConnectivityFeedback';
 import CheckVideoConnectivityFeedback from './meetingreadinesschecker/CheckVideoConnectivityFeedback';
 import CheckVideoInputFeedback from './meetingreadinesschecker/CheckVideoInputFeedback';
+import CitrixVDIStrategy from './strategies/CitrixVDIStrategy';
 import CleanRestartedSessionTask from './task/CleanRestartedSessionTask';
 import CleanStoppedSessionTask from './task/CleanStoppedSessionTask';
 import ClientMetricReport from './clientmetricreport/ClientMetricReport';
@@ -364,9 +365,9 @@ import { BackgroundSegmentationInitializationStatus } from './backgroundsegmenta
 import { BackgroundSegmentationMetricsObserver } from './backgroundsegmentation/BackgroundSegmentationMetrics';
 import { BackgroundSegmentationProcessorMetrics } from './backgroundsegmentation/BackgroundSegmentationMetrics';
 import { BackgroundSegmentationVideoFrameProcessorConfig, BlurStrength as BackgroundSegmentationBlurStrength, ModelType, ProcessorEffect } from './backgroundsegmentation/BackgroundSegmentationConstants';
+import { CITRIX_VDI_STRATEGY, STANDARD_STRATEGY } from './strategies/MediaStrategy';
 import { MeetingSessionSignalingTiming, MeetingSessionRemoteAudioTiming, MeetingSessionLocalAudioTiming, MeetingSessionLocalVideoTiming, MeetingSessionRemoteVideoTiming, MeetingSessionTimingObserver } from './meetingsessiontiming/MeetingSessionTiming';
 import { MutableVideoPreferences } from './videodownlinkbandwidthpolicy/VideoPreferences';
-import { STANDARD_STRATEGY } from './strategies/MediaStrategy';
 import { Some, None, Maybe, MaybeProvider, Eq, PartialOrd } from './utils/Types';
 import { isAudioTransformDevice } from './devicecontroller/AudioTransformDevice';
 import { isDestroyable } from './destroyable/Destroyable';
@@ -428,6 +429,7 @@ export {
   BaseTask,
   BitrateParameters,
   BrowserBehavior,
+  CITRIX_VDI_STRATEGY,
   CSPMonitor,
   CanvasVideoFrameBuffer,
   CheckAudioConnectivityFeedback,
@@ -439,6 +441,7 @@ export {
   CheckNetworkUDPConnectivityFeedback,
   CheckVideoConnectivityFeedback,
   CheckVideoInputFeedback,
+  CitrixVDIStrategy,
   CleanRestartedSessionTask,
   CleanStoppedSessionTask,
   ClientMetricReport,

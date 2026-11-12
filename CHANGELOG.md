@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `MediaStrategy`, which supplies the peer connection, `getUserMedia` and `enumerateDevices` calls the SDK makes. `StandardStrategy` calls the browser and is the default, so behaviour is unchanged unless an application supplies another. Supply a strategy through `MeetingSessionConfiguration.strategy` and the `strategy` option of `DefaultDeviceController`. See the Media Strategies guide.
 - Added the `MediaStrategy` members a strategy needs when media runs outside the browser: `getStrategyName()` and `STANDARD_STRATEGY`, `supportsContentShare`, the silent audio stream used when no microphone is selected, video and audio element binding, and `dispose()`. `StandardStrategy` keeps the browser behaviour for all of them.
+- Added `CitrixVDIStrategy`, which redirects media to the Citrix endpoint through an initialized Citrix UCSDK object that the application passes in, together with the window handle from the Citrix Bootstrap. The SDK does not include the UCSDK. It redirects the main connection, the camera and the microphone, and sets `supportsContentShare` to `false`, so content share stays in the browser. Its `getStrategyName()` returns `CITRIX_VDI_STRATEGY`. `CitrixVDIStrategy.connect` initializes the Bootstrap and the UCSDK itself and waits for the endpoint to connect, for pages where nothing else has initialized them.
 
 ### Removed
 
