@@ -12,6 +12,7 @@ import NoOpMediaStreamBroker from '../../src/mediastreambroker/NoOpMediaStreamBr
 import MediaStreamBrokerObserver from '../../src/mediastreambrokerobserver/MediaStreamBrokerObserver';
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
+import MockMediaStrategy from '../strategies/MockMediaStrategy';
 import { createFakeTimers } from '../utils/fakeTimerHelper';
 
 describe('DefaultAudioMixController', () => {
@@ -431,6 +432,78 @@ describe('DefaultAudioMixController', () => {
       expect(spy.calledOnceWith(null)).to.be.true;
       mediaStreamBroker.removeMediaStreamBrokerObserver(defaultAudioMixController);
       spy.restore();
+    });
+  });
+
+  describe('media strategy element binding', () => {
+    it('registers the element with the strategy before assigning the stream', async () => {
+      const strategy = new MockMediaStrategy();
+      const controller = new DefaultAudioMixController(logger, strategy);
+      await controller.bindAudioElement(element);
+      await controller.bindAudioStream(stream);
+
+      expect(strategy.boundAudioElements.length).to.be.at.least(1);
+      expect(strategy.boundAudioElements[0][0]).to.equal(element);
+      expect(strategy.boundAudioElements[0][1]).to.equal(stream);
+      expect(element.srcObject).to.equal(stream);
+    });
+
+    it('releases the element with the strategy on unbind', async () => {
+      const strategy = new MockMediaStrategy();
+      const controller = new DefaultAudioMixController(logger, strategy);
+      await controller.bindAudioElement(element);
+      await controller.bindAudioStream(stream);
+      controller.unbindAudioElement();
+
+      expect(strategy.unboundAudioElements).to.deep.equal([element]);
+      expect(element.srcObject).to.equal(null);
+    });
+
+    it('releases and re-registers the element across a Chromium sink change', async () => {
+      behavior.browserName = 'chrome';
+      domMockBuilder = new DOMMockBuilder(behavior);
+      const strategy = new MockMediaStrategy();
+      const controller = new DefaultAudioMixController(logger, strategy);
+      await controller.bindAudioElement(element);
+      await controller.bindAudioStream(stream);
+      const boundBefore = strategy.boundAudioElements.length;
+      const unboundBefore = strategy.unboundAudioElements.length;
+
+      await controller.bindAudioDevice(device);
+
+      // The sink change detaches the stream to call setSinkId and reattaches it, so
+      // the platform is told both times rather than being left with a stale target.
+      expect(strategy.unboundAudioElements.length).to.equal(unboundBefore + 1);
+      expect(strategy.boundAudioElements.length).to.equal(boundBefore + 1);
+      expect(strategy.unboundAudioElements.every(el => el === element)).to.be.true;
+      expect(element.srcObject).to.equal(stream);
+    });
+
+    it('does not re-register a sink change that has no stream to reattach', async () => {
+      behavior.browserName = 'chrome';
+      domMockBuilder = new DOMMockBuilder(behavior);
+      const strategy = new MockMediaStrategy();
+      const controller = new DefaultAudioMixController(logger, strategy);
+      await controller.bindAudioElement(element);
+      const unboundBefore = strategy.unboundAudioElements.length;
+
+      await controller.bindAudioDevice(device);
+
+      expect(strategy.boundAudioElements.length).to.equal(0);
+      expect(strategy.unboundAudioElements.length).to.equal(unboundBefore + 1);
+    });
+
+    it('only assigns srcObject with the default StandardStrategy', async () => {
+      behavior.browserName = 'chrome';
+      domMockBuilder = new DOMMockBuilder(behavior);
+      const controller = new DefaultAudioMixController(logger);
+      await controller.bindAudioElement(element);
+      await controller.bindAudioStream(stream);
+      expect(element.srcObject).to.equal(stream);
+
+      await controller.bindAudioDevice(device);
+      controller.unbindAudioElement();
+      expect(element.srcObject).to.equal(null);
     });
   });
 });

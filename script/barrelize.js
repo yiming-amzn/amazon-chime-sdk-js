@@ -178,6 +178,11 @@ walk('src')
       exportStrings.push(`BackgroundSegmentationInitializationStatus`);
       exportStrings.push(`BackgroundSegmentationProcessorMetrics`);
     }
+
+    if (typeToImport === 'MediaStrategy') {
+      importStrings.push(`import { STANDARD_STRATEGY } from '${pathToImport}/MediaStrategy';`);
+      exportStrings.push(`STANDARD_STRATEGY`);
+    }
   });
 
 importStrings.sort();

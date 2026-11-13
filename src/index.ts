@@ -366,6 +366,7 @@ import { BackgroundSegmentationProcessorMetrics } from './backgroundsegmentation
 import { BackgroundSegmentationVideoFrameProcessorConfig, BlurStrength as BackgroundSegmentationBlurStrength, ModelType, ProcessorEffect } from './backgroundsegmentation/BackgroundSegmentationConstants';
 import { MeetingSessionSignalingTiming, MeetingSessionRemoteAudioTiming, MeetingSessionLocalAudioTiming, MeetingSessionLocalVideoTiming, MeetingSessionRemoteVideoTiming, MeetingSessionTimingObserver } from './meetingsessiontiming/MeetingSessionTiming';
 import { MutableVideoPreferences } from './videodownlinkbandwidthpolicy/VideoPreferences';
+import { STANDARD_STRATEGY } from './strategies/MediaStrategy';
 import { Some, None, Maybe, MaybeProvider, Eq, PartialOrd } from './utils/Types';
 import { isAudioTransformDevice } from './devicecontroller/AudioTransformDevice';
 import { isDestroyable } from './destroyable/Destroyable';
@@ -639,6 +640,7 @@ export {
   SDP,
   SDPCandidateType,
   SDPMediaSection,
+  STANDARD_STRATEGY,
   Scheduler,
   SendAndReceiveDataMessagesTask,
   SendingAudioFailureConnectionHealthPolicy,

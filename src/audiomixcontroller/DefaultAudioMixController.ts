@@ -7,6 +7,8 @@ import DefaultBrowserBehavior from '../browserbehavior/DefaultBrowserBehavior';
 import Logger from '../logger/Logger';
 import MediaStreamBrokerObserver from '../mediastreambrokerobserver/MediaStreamBrokerObserver';
 import AsyncScheduler from '../scheduler/AsyncScheduler';
+import MediaStrategy from '../strategies/MediaStrategy';
+import StandardStrategy from '../strategies/StandardStrategy';
 import AudioMixController from './AudioMixController';
 
 export default class DefaultAudioMixController
@@ -18,7 +20,10 @@ export default class DefaultAudioMixController
   private browserBehavior: BrowserBehavior = new DefaultBrowserBehavior();
   private observers: Set<AudioMixObserver> = new Set<AudioMixObserver>();
 
-  constructor(private logger?: Logger) {}
+  constructor(
+    private logger?: Logger,
+    private strategy: MediaStrategy = new StandardStrategy()
+  ) {}
 
   async bindAudioElement(element: HTMLAudioElement): Promise<void> {
     if (!element) {
@@ -33,6 +38,7 @@ export default class DefaultAudioMixController
     if (!this.audioElement) {
       return;
     }
+    this.strategy.unbindAudioElement(this.audioElement);
     this.audioElement.srcObject = null;
     this.audioElement = null;
     this.forEachObserver((observer: AudioMixObserver) => {
@@ -93,6 +99,9 @@ export default class DefaultAudioMixController
     const previousStream = this.audioElement.srcObject as MediaStream;
 
     if (this.audioStream) {
+      if (previousStream !== this.audioStream) {
+        this.strategy.bindAudioElement(this.audioElement, this.audioStream);
+      }
       this.audioElement.srcObject = this.audioStream;
     }
 
@@ -130,6 +139,7 @@ export default class DefaultAudioMixController
     const existingAudioElement = this.audioElement;
     const existingStream = this.audioStream;
     if (this.browserBehavior.hasChromiumWebRTC()) {
+      this.strategy.unbindAudioElement(existingAudioElement);
       existingAudioElement.srcObject = null;
     }
 
@@ -143,6 +153,9 @@ export default class DefaultAudioMixController
     }
 
     if (this.browserBehavior.hasChromiumWebRTC()) {
+      if (existingStream) {
+        this.strategy.bindAudioElement(existingAudioElement, existingStream);
+      }
       existingAudioElement.srcObject = existingStream;
     }
   }

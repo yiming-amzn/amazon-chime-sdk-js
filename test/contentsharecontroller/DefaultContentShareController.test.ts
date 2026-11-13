@@ -20,6 +20,7 @@ import MeetingSessionCredentials from '../../src/meetingsession/MeetingSessionCr
 import MeetingSessionStatus from '../../src/meetingsession/MeetingSessionStatus';
 import MeetingSessionStatusCode from '../../src/meetingsession/MeetingSessionStatusCode';
 import MeetingSessionURLs from '../../src/meetingsession/MeetingSessionURLs';
+import StandardStrategy from '../../src/strategies/StandardStrategy';
 import { Maybe } from '../../src/utils/Types';
 import DefaultSimulcastUplinkPolicyForContentShare from '../../src/videouplinkbandwidthpolicy/DefaultSimulcastUplinkPolicyForContentShare';
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
@@ -146,6 +147,16 @@ describe('DefaultContentShareController', () => {
         meetingSessionConfigure
       );
     expect(contentShareMeetingSessionConfigure.strategy).to.equal(strategy);
+  });
+
+  it('uses StandardStrategy for content share when the strategy does not support it', () => {
+    const meetingSessionConfigure = makeSessionConfiguration();
+    meetingSessionConfigure.strategy = new MockMediaStrategy([], undefined, 'Mock', false);
+    const contentShareMeetingSessionConfigure =
+      DefaultContentShareController.createContentShareMeetingSessionConfigure(
+        meetingSessionConfigure
+      );
+    expect(contentShareMeetingSessionConfigure.strategy).to.be.instanceOf(StandardStrategy);
   });
 
   describe('content share APIs', () => {

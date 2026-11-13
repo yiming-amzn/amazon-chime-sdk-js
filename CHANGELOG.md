@@ -10,10 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added `MediaStrategy`, which supplies the peer connection, `getUserMedia` and `enumerateDevices` calls the SDK makes. `StandardStrategy` calls the browser and is the default, so behaviour is unchanged unless an application supplies another. Supply a strategy through `MeetingSessionConfiguration.strategy` and the `strategy` option of `DefaultDeviceController`. See the Media Strategies guide.
+- Added the `MediaStrategy` members a strategy needs when media runs outside the browser: `getStrategyName()` and `STANDARD_STRATEGY`, `supportsContentShare`, the silent audio stream used when no microphone is selected, video and audio element binding, and `dispose()`. `StandardStrategy` keeps the browser behaviour for all of them.
 
 ### Removed
 
 ### Changed
+
+- `DefaultVideoTile.connectVideoStreamToVideoElement` and `DefaultVideoTile.disconnectVideoStreamFromVideoElement` take the strategy as a new optional trailing argument, defaulting to `StandardStrategy`.
 
 ### Fixed
 

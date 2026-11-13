@@ -13,6 +13,7 @@ import MeetingSessionStatus from '../meetingsession/MeetingSessionStatus';
 import DefaultModality from '../modality/DefaultModality';
 import AsyncScheduler from '../scheduler/AsyncScheduler';
 import VideoCodecCapability from '../sdp/VideoCodecCapability';
+import StandardStrategy from '../strategies/StandardStrategy';
 import { Maybe } from '../utils/Types';
 import NoVideoDownlinkBandwidthPolicy from '../videodownlinkbandwidthpolicy/NoVideoDownlinkBandwidthPolicy';
 import VideoTile from '../videotile/VideoTile';
@@ -42,7 +43,9 @@ export default class DefaultContentShareController
       configuration.credentials.joinToken + ContentShareConstants.Modality;
     contentShareConfiguration.meetingFeatures = configuration.meetingFeatures.clone();
     contentShareConfiguration.videoDownlinkBandwidthPolicy = new NoVideoDownlinkBandwidthPolicy();
-    contentShareConfiguration.strategy = configuration.strategy;
+    contentShareConfiguration.strategy = configuration.strategy.supportsContentShare
+      ? configuration.strategy
+      : new StandardStrategy();
     return contentShareConfiguration;
   }
 

@@ -8,12 +8,16 @@ import AudioVideoTileController from '../../src/audiovideocontroller/AudioVideoC
 import NoOpAudioVideoTileController from '../../src/audiovideocontroller/NoOpAudioVideoController';
 import AudioVideoObserver from '../../src/audiovideoobserver/AudioVideoObserver';
 import VideoQualitySettings from '../../src/devicecontroller/VideoQualitySettings';
+import { STANDARD_STRATEGY } from '../../src/strategies/MediaStrategy';
 import NoOpVideoElementFactory from '../../src/videoelementfactory/NoOpVideoElementFactory';
 import VideoTileState from '../../src/videotile/VideoTileState';
+import DefaultVideoTileController from '../../src/videotilecontroller/DefaultVideoTileController';
 import VideoTileController, {
   VideoTileResolutionObserver,
 } from '../../src/videotilecontroller/VideoTileController';
+import DefaultVideoTileFactory from '../../src/videotilefactory/DefaultVideoTileFactory';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
+import MockMediaStrategy from '../strategies/MockMediaStrategy';
 import { createFakeTimers } from '../utils/fakeTimerHelper';
 
 describe('DefaultVideoTileController', () => {
@@ -189,6 +193,42 @@ describe('DefaultVideoTileController', () => {
       tileController.unbindVideoElement(0);
       expect(loggerSpy.calledWith('Ignoring video element unbinding for unknown tile id 0')).to.be
         .true;
+    });
+
+    it('releases the element with the vdi strategy when cleaning it up', () => {
+      const strategy = new MockMediaStrategy();
+      tileController.strategy = strategy;
+      let videoElement = document.createElement('video');
+      const tileId = tileController.addVideoTile().id();
+      tileController.bindVideoElement(tileId, videoElement);
+      const tile = tileController.getVideoTile(tileId);
+      tile.bindVideoStream('attendee', false, mockMediaStream, 1, 1, 1);
+
+      tileController.unbindVideoElement(tileId);
+      expect(strategy.unboundVideoElements).to.deep.equal([videoElement]);
+      videoElement = null;
+    });
+  });
+
+  describe('strategy', () => {
+    it('takes the strategy from the meeting session configuration', () => {
+      const strategy = new MockMediaStrategy();
+      audioVideoController.configuration.strategy = strategy;
+      const controller = new DefaultVideoTileController(
+        new DefaultVideoTileFactory(),
+        audioVideoController,
+        audioVideoController.logger
+      );
+      expect(controller.strategy).to.equal(strategy);
+    });
+
+    it('is StandardStrategy when the configuration does not supply one', () => {
+      const controller = new DefaultVideoTileController(
+        new DefaultVideoTileFactory(),
+        audioVideoController,
+        audioVideoController.logger
+      );
+      expect(controller.strategy.getStrategyName()).to.equal(STANDARD_STRATEGY);
     });
   });
 

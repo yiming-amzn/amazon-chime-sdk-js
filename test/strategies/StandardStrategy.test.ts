@@ -4,6 +4,7 @@
 import * as chai from 'chai';
 import * as sinon from 'sinon';
 
+import { STANDARD_STRATEGY } from '../../src/strategies/MediaStrategy';
 import StandardStrategy from '../../src/strategies/StandardStrategy';
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
@@ -22,8 +23,17 @@ describe('StandardStrategy', () => {
     domMockBuilder.cleanup();
   });
 
+  it('reports the standard strategy name', () => {
+    expect(strategy.getStrategyName()).to.equal(STANDARD_STRATEGY);
+  });
+
+  it('supports content share', () => {
+    expect(strategy.supportsContentShare).to.be.true;
+  });
+
   it('creates a native peer connection', () => {
-    expect(strategy.createPeerConnection({})).to.be.instanceOf(RTCPeerConnection);
+    const peer = strategy.createPeerConnection({});
+    expect(peer).to.be.instanceOf(RTCPeerConnection);
   });
 
   it('calls the browser getUserMedia', async () => {
@@ -36,5 +46,21 @@ describe('StandardStrategy', () => {
     const spy = sinon.spy(navigator.mediaDevices, 'enumerateDevices');
     await strategy.enumerateDevices();
     expect(spy.calledOnce).to.be.true;
+  });
+
+  it('leaves the silent audio stream to the SDK', async () => {
+    expect(await strategy.createSilentAudioStream()).to.be.null;
+  });
+
+  it('does nothing when binding or unbinding elements', async () => {
+    const video = document.createElement('video');
+    const audio = new HTMLAudioElement();
+    const stream = new MediaStream();
+    strategy.bindVideoElement(video, stream);
+    strategy.unbindVideoElement(video);
+    strategy.bindAudioElement(audio, stream);
+    strategy.unbindAudioElement(audio);
+    expect(video.srcObject).to.be.undefined;
+    await strategy.dispose();
   });
 });

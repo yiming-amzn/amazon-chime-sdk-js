@@ -12,7 +12,7 @@ import DeviceControllerBasedMediaStreamBroker from '../mediastreambroker/DeviceC
 import MediaStreamBrokerObserver from '../mediastreambrokerobserver/MediaStreamBrokerObserver';
 import AsyncScheduler from '../scheduler/AsyncScheduler';
 import StatsCollector from '../statscollector/StatsCollector';
-import MediaStrategy from '../strategies/MediaStrategy';
+import MediaStrategy, { isVDIStrategy } from '../strategies/MediaStrategy';
 import StandardStrategy from '../strategies/StandardStrategy';
 import PromiseQueue from '../utils/PromiseQueue';
 import { Maybe } from '../utils/Types';
@@ -98,12 +98,24 @@ export default class DefaultDeviceController
 
   private strategy: MediaStrategy;
 
+  // The join waits for an audio packet, so a sending track is needed even with no microphone.
+  private async emptyAudioStream(): Promise<MediaStream> {
+    const stream = await this.strategy.createSilentAudioStream();
+    if (stream) {
+      return stream;
+    }
+    if (isVDIStrategy(this.strategy)) {
+      this.logger.warn('VDI strategy has no silent audio stream; the join may not complete');
+    }
+    return DefaultDeviceController.createEmptyAudioDevice() as MediaStream;
+  }
+
   constructor(
     private logger: Logger,
     options?: {
       enableWebAudio?: boolean;
       useMediaConstraintsFallback?: boolean;
-      /** Defaults to [[StandardStrategy]]. */
+      /** Media strategy for device acquisition. Defaults to [[StandardStrategy]]. */
       strategy?: MediaStrategy;
     },
     private browserBehavior: ExtendedBrowserBehavior = new DefaultBrowserBehavior(),
@@ -544,13 +556,19 @@ export default class DefaultDeviceController
         ? this.chosenVideoTransformDevice.outputMediaStream
         : this.activeDevices['video'].stream,
       element,
-      true
+      true,
+      this.strategy
     );
     this.trace('startVideoPreviewForVideoInput', element.id);
   }
 
   stopVideoPreviewForVideoInput(element: HTMLVideoElement): void {
-    DefaultVideoTile.disconnectVideoStreamFromVideoElement(element, false);
+    DefaultVideoTile.disconnectVideoStreamFromVideoElement(
+      element,
+      false,
+      undefined,
+      this.strategy
+    );
     this.trace('stopVideoPreviewForVideoInput', element.id);
   }
 
@@ -1152,7 +1170,7 @@ export default class DefaultDeviceController
       );
       const stream = this.intrinsicDeviceAsMediaStream(device);
       if (kind === 'audio' && device === null) {
-        newDevice.stream = DefaultDeviceController.createEmptyAudioDevice() as MediaStream;
+        newDevice.stream = await this.emptyAudioStream();
         newDevice.constraints = null;
       } else if (stream) {
         this.logger.info(`using media stream ${stream.id} for ${kind} device`);
@@ -1220,7 +1238,7 @@ export default class DefaultDeviceController
         if (kind === 'audio') {
           this.logger.info(`choosing null ${kind} device instead`);
           try {
-            newDevice.stream = DefaultDeviceController.createEmptyAudioDevice();
+            newDevice.stream = await this.emptyAudioStream();
             newDevice.constraints = null;
             await this.handleNewInputDevice(kind, newDevice);
           } catch (error) {
