@@ -4,9 +4,9 @@
 import DefaultBrowserBehavior from '../browserbehavior/DefaultBrowserBehavior';
 import DevicePixelRatioMonitor from '../devicepixelratiomonitor/DevicePixelRatioMonitor';
 import DevicePixelRatioObserver from '../devicepixelratioobserver/DevicePixelRatioObserver';
+import DefaultMediaElementBinder from '../mediaelementbinder/DefaultMediaElementBinder';
+import MediaElementBinder from '../mediaelementbinder/MediaElementBinder';
 import DefaultModality from '../modality/DefaultModality';
-import MediaStrategy from '../strategies/MediaStrategy';
-import StandardStrategy from '../strategies/StandardStrategy';
 import VideoTileController from '../videotilecontroller/VideoTileController';
 import VideoElementResolutionMonitor from './VideoElementResolutionMonitor';
 import VideoTile from './VideoTile';
@@ -20,13 +20,13 @@ export default class DefaultVideoTile implements DevicePixelRatioObserver, Video
    * @param videoStream The video stream input.
    * @param videoElement The video element input.
    * @param localTile Flag to indicate whether this is a local video.
-   * @param strategy Registers the element with the platform before the stream is assigned.
+   * @param mediaElements Registers the element with the platform before the stream is assigned.
    */
   static connectVideoStreamToVideoElement(
     videoStream: MediaStream,
     videoElement: HTMLVideoElement,
     localTile: boolean,
-    strategy: MediaStrategy = new StandardStrategy()
+    mediaElements: MediaElementBinder = new DefaultMediaElementBinder()
   ): void {
     const transform =
       localTile && videoStream.getVideoTracks()[0].getSettings().facingMode !== 'environment'
@@ -63,7 +63,7 @@ export default class DefaultVideoTile implements DevicePixelRatioObserver, Video
     }
 
     if (videoElement.srcObject !== videoStream) {
-      strategy.bindVideoElement(videoElement, videoStream);
+      mediaElements.bindVideoElement(videoElement, videoStream);
       videoElement.srcObject = videoStream;
 
       // In Safari, a hidden video element can show a black screen.
@@ -94,13 +94,13 @@ export default class DefaultVideoTile implements DevicePixelRatioObserver, Video
    * Based on `keepLastFrameWhenPaused`, it sets `HTMLVideoElement.srcObject` to `null`.
    * @param keepLastFrameWhenPaused If `true` and `dueToPause` is also `true`, then we will not set `HTMLVideoElement.srcObject` of the
    * video element to `null` when it is paused and therefore, the last frame of the stream will be shown.
-   * @param strategy Releases the element only on the paths that clear `srcObject`.
+   * @param mediaElements Releases the element only on the paths that clear `srcObject`.
    */
   static disconnectVideoStreamFromVideoElement(
     videoElement: HTMLVideoElement | null,
     dueToPause: boolean,
     keepLastFrameWhenPaused: boolean | undefined = false,
-    strategy: MediaStrategy = new StandardStrategy()
+    mediaElements: MediaElementBinder = new DefaultMediaElementBinder()
   ): void {
     if (!videoElement) {
       return;
@@ -108,7 +108,7 @@ export default class DefaultVideoTile implements DevicePixelRatioObserver, Video
 
     if (dueToPause) {
       if (!keepLastFrameWhenPaused) {
-        strategy.unbindVideoElement(videoElement);
+        mediaElements.unbindVideoElement(videoElement);
         videoElement.srcObject = null;
         videoElement.style.transform = '';
       }
@@ -122,7 +122,7 @@ export default class DefaultVideoTile implements DevicePixelRatioObserver, Video
       DefaultVideoTile.setVideoElementFlag(videoElement, 'disablePictureInPicture', false);
       DefaultVideoTile.setVideoElementFlag(videoElement, 'disableRemotePlayback', false);
 
-      strategy.unbindVideoElement(videoElement);
+      mediaElements.unbindVideoElement(videoElement);
       videoElement.srcObject = null;
     }
   }
@@ -149,7 +149,7 @@ export default class DefaultVideoTile implements DevicePixelRatioObserver, Video
         this.tileState.boundVideoElement,
         false,
         undefined,
-        this.tileController.strategy
+        this.tileController.mediaElements
       );
     }
     this.tileState = new VideoTileState();
@@ -338,14 +338,14 @@ export default class DefaultVideoTile implements DevicePixelRatioObserver, Video
         this.tileState.boundVideoStream,
         this.tileState.boundVideoElement,
         this.tileState.localTile,
-        this.tileController.strategy
+        this.tileController.mediaElements
       );
     } else {
       DefaultVideoTile.disconnectVideoStreamFromVideoElement(
         this.tileState.boundVideoElement,
         this.tileState.paused,
         this.tileController.keepLastFrameWhenPaused,
-        this.tileController.strategy
+        this.tileController.mediaElements
       );
     }
   }

@@ -57,7 +57,10 @@ import CheckNetworkTCPConnectivityFeedback from './meetingreadinesschecker/Check
 import CheckNetworkUDPConnectivityFeedback from './meetingreadinesschecker/CheckNetworkUDPConnectivityFeedback';
 import CheckVideoConnectivityFeedback from './meetingreadinesschecker/CheckVideoConnectivityFeedback';
 import CheckVideoInputFeedback from './meetingreadinesschecker/CheckVideoInputFeedback';
-import CitrixVDIStrategy from './strategies/CitrixVDIStrategy';
+import CitrixMediaDeviceProvider from './vdi/CitrixMediaDeviceProvider';
+import CitrixMediaElementBinder from './vdi/CitrixMediaElementBinder';
+import CitrixPeerConnectionFactory from './vdi/CitrixPeerConnectionFactory';
+import CitrixVDIAdapter from './vdi/CitrixVDIAdapter';
 import CleanRestartedSessionTask from './task/CleanRestartedSessionTask';
 import CleanStoppedSessionTask from './task/CleanStoppedSessionTask';
 import ClientMetricReport from './clientmetricreport/ClientMetricReport';
@@ -91,11 +94,14 @@ import DefaultDevicePixelRatioMonitor from './devicepixelratiomonitor/DefaultDev
 import DefaultEncodedTransformWorkerManager from './encodedtransformmanager/DefaultEncodedTransformWorkerManager';
 import DefaultEventController from './eventcontroller/DefaultEventController';
 import DefaultMediaDeviceFactory from './mediadevicefactory/DefaultMediaDeviceFactory';
+import DefaultMediaDeviceProvider from './mediadeviceprovider/DefaultMediaDeviceProvider';
+import DefaultMediaElementBinder from './mediaelementbinder/DefaultMediaElementBinder';
 import DefaultMeetingEventReporter from './eventreporter/DefaultMeetingEventReporter';
 import DefaultMeetingReadinessChecker from './meetingreadinesschecker/DefaultMeetingReadinessChecker';
 import DefaultMeetingSession from './meetingsession/DefaultMeetingSession';
 import DefaultMessagingSession from './messagingsession/DefaultMessagingSession';
 import DefaultModality from './modality/DefaultModality';
+import DefaultPeerConnectionFactory from './peerconnectionfactory/DefaultPeerConnectionFactory';
 import DefaultPingPong from './pingpong/DefaultPingPong';
 import DefaultRealtimeController from './realtimecontroller/DefaultRealtimeController';
 import DefaultReconnectController from './reconnectcontroller/DefaultReconnectController';
@@ -162,9 +168,10 @@ import Log from './logger/Log';
 import LogLevel from './logger/LogLevel';
 import Logger from './logger/Logger';
 import MediaDeviceFactory from './mediadevicefactory/MediaDeviceFactory';
+import MediaDeviceProvider from './mediadeviceprovider/MediaDeviceProvider';
 import MediaDeviceProxyHandler from './mediadevicefactory/MediaDeviceProxyHandler';
+import MediaElementBinder from './mediaelementbinder/MediaElementBinder';
 import MediaMetricsEncodedTransformManager from './encodedtransformmanager/MediaMetricsEncodedTransformManager';
-import MediaStrategy from './strategies/MediaStrategy';
 import MediaStreamBroker from './mediastreambroker/MediaStreamBroker';
 import MediaStreamBrokerObserver from './mediastreambrokerobserver/MediaStreamBrokerObserver';
 import MeetingEventsClientConfiguration from './eventsclientconfiguration/MeetingEventsClientConfiguration';
@@ -215,6 +222,7 @@ import OverconstrainedError from './devicecontroller/OverconstrainedError';
 import POSTLogger from './logger/POSTLogger';
 import POSTLoggerOptions from './logger/POSTLoggerOptions';
 import ParallelGroupTask from './task/ParallelGroupTask';
+import PeerConnectionFactory from './peerconnectionfactory/PeerConnectionFactory';
 import PermissionDeniedError from './devicecontroller/PermissionDeniedError';
 import PingPong from './pingpong/PingPong';
 import PingPongObserver from './pingpongobserver/PingPongObserver';
@@ -274,7 +282,6 @@ import SimulcastUplinkObserver from './videouplinkbandwidthpolicy/SimulcastUplin
 import SimulcastUplinkPolicy from './videouplinkbandwidthpolicy/SimulcastUplinkPolicy';
 import SimulcastVideoStreamIndex from './videostreamindex/SimulcastVideoStreamIndex';
 import SingleNodeAudioTransformDevice from './devicecontroller/SingleNodeAudioTransformDevice';
-import StandardStrategy from './strategies/StandardStrategy';
 import StartEncodedTransformWorkerTask from './task/StartEncodedTransformWorkerTask';
 import StreamMetricReport from './clientmetricreport/StreamMetricReport';
 import SubscribeAndReceiveSubscribeAckTask from './task/SubscribeAndReceiveSubscribeAckTask';
@@ -299,6 +306,8 @@ import TranscriptionStatusType from './transcript/TranscriptionStatusType';
 import TypeError from './devicecontroller/TypeError';
 import UnusableAudioWarningConnectionHealthPolicy from './connectionhealthpolicy/UnusableAudioWarningConnectionHealthPolicy';
 import UserAgentParser from './useragentparser/UserAgentParser';
+import VDIAdapter from './vdi/VDIAdapter';
+import VDIComponents from './vdi/VDIComponents';
 import Versioning from './versioning/Versioning';
 import VideoAdaptiveProbePolicy from './videodownlinkbandwidthpolicy/VideoAdaptiveProbePolicy';
 import VideoCaptureAndEncodeParameter from './videocaptureandencodeparameter/VideoCaptureAndEncodeParameter';
@@ -365,7 +374,6 @@ import { BackgroundSegmentationInitializationStatus } from './backgroundsegmenta
 import { BackgroundSegmentationMetricsObserver } from './backgroundsegmentation/BackgroundSegmentationMetrics';
 import { BackgroundSegmentationProcessorMetrics } from './backgroundsegmentation/BackgroundSegmentationMetrics';
 import { BackgroundSegmentationVideoFrameProcessorConfig, BlurStrength as BackgroundSegmentationBlurStrength, ModelType, ProcessorEffect } from './backgroundsegmentation/BackgroundSegmentationConstants';
-import { CITRIX_VDI_STRATEGY, STANDARD_STRATEGY } from './strategies/MediaStrategy';
 import { MeetingSessionSignalingTiming, MeetingSessionRemoteAudioTiming, MeetingSessionLocalAudioTiming, MeetingSessionLocalVideoTiming, MeetingSessionRemoteVideoTiming, MeetingSessionTimingObserver } from './meetingsessiontiming/MeetingSessionTiming';
 import { MutableVideoPreferences } from './videodownlinkbandwidthpolicy/VideoPreferences';
 import { Some, None, Maybe, MaybeProvider, Eq, PartialOrd } from './utils/Types';
@@ -429,7 +437,6 @@ export {
   BaseTask,
   BitrateParameters,
   BrowserBehavior,
-  CITRIX_VDI_STRATEGY,
   CSPMonitor,
   CanvasVideoFrameBuffer,
   CheckAudioConnectivityFeedback,
@@ -441,7 +448,10 @@ export {
   CheckNetworkUDPConnectivityFeedback,
   CheckVideoConnectivityFeedback,
   CheckVideoInputFeedback,
-  CitrixVDIStrategy,
+  CitrixMediaDeviceProvider,
+  CitrixMediaElementBinder,
+  CitrixPeerConnectionFactory,
+  CitrixVDIAdapter,
   CleanRestartedSessionTask,
   CleanStoppedSessionTask,
   ClientMetricReport,
@@ -475,11 +485,14 @@ export {
   DefaultEncodedTransformWorkerManager,
   DefaultEventController,
   DefaultMediaDeviceFactory,
+  DefaultMediaDeviceProvider,
+  DefaultMediaElementBinder,
   DefaultMeetingEventReporter,
   DefaultMeetingReadinessChecker,
   DefaultMeetingSession,
   DefaultMessagingSession,
   DefaultModality,
+  DefaultPeerConnectionFactory,
   DefaultPingPong,
   DefaultRealtimeController,
   DefaultReconnectController,
@@ -549,9 +562,10 @@ export {
   Maybe,
   MaybeProvider,
   MediaDeviceFactory,
+  MediaDeviceProvider,
   MediaDeviceProxyHandler,
+  MediaElementBinder,
   MediaMetricsEncodedTransformManager,
-  MediaStrategy,
   MediaStreamBroker,
   MediaStreamBrokerObserver,
   MeetingEventsClientConfiguration,
@@ -612,6 +626,7 @@ export {
   POSTLoggerOptions,
   ParallelGroupTask,
   PartialOrd,
+  PeerConnectionFactory,
   PermissionDeniedError,
   PingPong,
   PingPongObserver,
@@ -643,7 +658,6 @@ export {
   SDP,
   SDPCandidateType,
   SDPMediaSection,
-  STANDARD_STRATEGY,
   Scheduler,
   SendAndReceiveDataMessagesTask,
   SendingAudioFailureConnectionHealthPolicy,
@@ -674,7 +688,6 @@ export {
   SimulcastVideoStreamIndex,
   SingleNodeAudioTransformDevice,
   Some,
-  StandardStrategy,
   StartEncodedTransformWorkerTask,
   StreamMetricReport,
   SubscribeAndReceiveSubscribeAckTask,
@@ -699,6 +712,8 @@ export {
   TypeError,
   UnusableAudioWarningConnectionHealthPolicy,
   UserAgentParser,
+  VDIAdapter,
+  VDIComponents,
   Versioning,
   VideoAdaptiveProbePolicy,
   VideoCaptureAndEncodeParameter,

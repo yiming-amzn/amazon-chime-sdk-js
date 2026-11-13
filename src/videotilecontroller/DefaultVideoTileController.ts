@@ -7,8 +7,9 @@ import VideoQualitySettings from '../devicecontroller/VideoQualitySettings';
 import DefaultDevicePixelRatioMonitor from '../devicepixelratiomonitor/DefaultDevicePixelRatioMonitor';
 import DevicePixelRatioWindowSource from '../devicepixelratiosource/DevicePixelRatioWindowSource';
 import Logger from '../logger/Logger';
-import MediaStrategy from '../strategies/MediaStrategy';
+import MediaElementBinder from '../mediaelementbinder/MediaElementBinder';
 import { Maybe } from '../utils/Types';
+import VDIComponents from '../vdi/VDIComponents';
 import DefaultVideoElementResolutionMonitor from '../videotile/DefaultVideoElementResolutionMonitor';
 import DefaultVideoTile from '../videotile/DefaultVideoTile';
 import { VideoElementFrameMetrics } from '../videotile/VideoElementFrameMonitor';
@@ -28,7 +29,7 @@ export default class DefaultVideoTileController implements VideoTileController {
   private currentPausedTilesByIds: Set<number> = new Set<number>();
   private resolutionObservers = new Set<VideoTileResolutionObserver>();
   keepLastFrameWhenPaused: boolean | undefined = false;
-  strategy: MediaStrategy;
+  mediaElements: MediaElementBinder;
 
   constructor(
     private tileFactory: VideoTileFactory,
@@ -36,7 +37,9 @@ export default class DefaultVideoTileController implements VideoTileController {
     private logger: Logger
   ) {
     this.keepLastFrameWhenPaused = audioVideoController.configuration.keepLastFrameWhenPaused;
-    this.strategy = audioVideoController.configuration.strategy;
+    this.mediaElements = VDIComponents.mediaElementBinder(
+      audioVideoController.configuration.vdiAdapter
+    );
   }
 
   private createDevicePixelRatioMonitorIfNeeded(): void {
@@ -93,7 +96,7 @@ export default class DefaultVideoTileController implements VideoTileController {
         videoElement,
         false,
         undefined,
-        this.strategy
+        this.mediaElements
       );
     }
   }

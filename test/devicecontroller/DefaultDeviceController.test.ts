@@ -23,6 +23,7 @@ import EventController from '../../src/eventcontroller/EventController';
 import EventName from '../../src/eventcontroller/EventName';
 import NoOpLogger from '../../src/logger/NoOpLogger';
 import MediaDeviceProxyHandler from '../../src/mediadevicefactory/MediaDeviceProxyHandler';
+import CitrixVDIAdapter, { CitrixUCSDK } from '../../src/vdi/CitrixVDIAdapter';
 import NoOpVideoElementFactory from '../../src/videoelementfactory/NoOpVideoElementFactory';
 import DefaultVideoTransformDevice from '../../src/videoframeprocessor/DefaultVideoTransformDevice';
 import NoOpVideoFrameProcessor from '../../src/videoframeprocessor/NoOpVideoFrameProcessor';
@@ -34,7 +35,7 @@ import DOMMockBuilder, {
 } from '../dommock/DOMMockBuilder';
 import MockError from '../dommock/MockError';
 import UserMediaState from '../dommock/UserMediaState';
-import MockMediaStrategy from '../strategies/MockMediaStrategy';
+import { makeCitrixAdapter, makeUcsdk } from '../vdi/FakeCitrixUCSDK';
 import {
   MockNodeTransformDevice,
   MockPassthroughTransformDevice,
@@ -2717,17 +2718,24 @@ describe('DefaultDeviceController', () => {
       expect(disconnectVideoStreamSpy.calledOnce).to.be.true;
     });
 
-    it('registers and releases the preview element with the vdi strategy', async () => {
-      const strategy = new MockMediaStrategy();
-      deviceController = new DefaultDeviceController(logger, { strategy });
+    it('registers and releases the preview element with the vdi adapter', async () => {
+      const ucsdk = makeUcsdk();
+      const citrixTrack = new MediaStreamTrack();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (citrixTrack as any).object_id = (): string => 'id';
+      const citrixStream = new MediaStream();
+      citrixStream.addTrack(citrixTrack);
+      (ucsdk.getUserMedia as sinon.SinonStub).resolves(citrixStream);
+      deviceController = new DefaultDeviceController(logger, {
+        vdiAdapter: makeCitrixAdapter(ucsdk),
+      });
       await deviceController.startVideoInput(stringDeviceId);
 
       deviceController.startVideoPreviewForVideoInput(element);
-      expect(strategy.boundVideoElements.length).to.equal(1);
-      expect(strategy.boundVideoElements[0][0]).to.equal(element);
+      expect((ucsdk.mapVideoElement as sinon.SinonStub).calledOnceWith(element, '0x1f')).to.be.true;
 
       deviceController.stopVideoPreviewForVideoInput(element);
-      expect(strategy.unboundVideoElements).to.deep.equal([element]);
+      expect((ucsdk.disposeVideoElement as sinon.SinonStub).calledOnceWith(element)).to.be.true;
     });
   });
 
@@ -2966,57 +2974,65 @@ describe('DefaultDeviceController', () => {
     });
   });
 
-  describe('media strategy', () => {
-    it('acquires an audio stream through the strategy', async () => {
-      const strategy = new MockMediaStrategy();
-      deviceController = new DefaultDeviceController(logger, { strategy });
+  describe('vdi adapter', () => {
+    let ucsdk: CitrixUCSDK;
+
+    function adapterWith(devices: MediaDeviceInfo[] = []): CitrixVDIAdapter {
+      ucsdk = makeUcsdk(devices);
+      const stream = new MediaStream();
+      stream.addTrack(new MediaStreamTrack());
+      (ucsdk.getUserMedia as sinon.SinonStub).resolves(stream);
+      return makeCitrixAdapter(ucsdk);
+    }
+
+    it('acquires an audio stream on the endpoint', async () => {
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapterWith() });
       await deviceController.startAudioInput(stringDeviceId);
-      expect(strategy.getUserMediaCalls.length).to.equal(1);
+      expect((ucsdk.getUserMedia as sinon.SinonStub).calledOnce).to.be.true;
     });
 
-    it('acquires a video stream through the strategy', async () => {
-      const strategy = new MockMediaStrategy();
-      deviceController = new DefaultDeviceController(logger, { strategy });
+    it('acquires a video stream on the endpoint', async () => {
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapterWith() });
       await deviceController.startVideoInput(stringDeviceId);
-      expect(strategy.getUserMediaCalls.length).to.equal(1);
+      expect((ucsdk.getUserMedia as sinon.SinonStub).calledOnce).to.be.true;
     });
 
-    it('enumerates devices through the strategy', async () => {
-      const strategy = new MockMediaStrategy([
-        getMediaDeviceInfo('strategy-mic', 'audioinput', 'Strategy Mic', 'group'),
-      ]);
-      deviceController = new DefaultDeviceController(logger, { strategy });
+    it('lists the endpoint devices', async () => {
+      deviceController = new DefaultDeviceController(logger, {
+        vdiAdapter: adapterWith([
+          getMediaDeviceInfo('endpoint-mic', 'audioinput', 'Endpoint Mic', 'group'),
+        ]),
+      });
       const devices = await deviceController.listAudioInputDevices();
-      expect(strategy.enumerateDevicesCalls).to.be.greaterThan(0);
-      expect(devices.map(device => device.deviceId)).to.deep.equal(['strategy-mic']);
+      expect(devices.map(device => device.deviceId)).to.deep.equal(['endpoint-mic']);
     });
 
-    it('triggers device labels through the strategy', async () => {
-      const strategy = new MockMediaStrategy([
-        getMediaDeviceInfo('strategy-mic', 'audioinput', '', 'group'),
-      ]);
-      deviceController = new DefaultDeviceController(logger, { strategy });
+    it('triggers device labels on the endpoint', async () => {
+      deviceController = new DefaultDeviceController(logger, {
+        vdiAdapter: adapterWith([getMediaDeviceInfo('endpoint-mic', 'audioinput', '', 'group')]),
+      });
       await deviceController.listAudioInputDevices();
-      expect(strategy.getUserMediaCalls).to.deep.equal([{ audio: true, video: true }]);
+      expect(
+        (ucsdk.getUserMedia as sinon.SinonStub).calledOnceWith({ audio: true, video: true })
+      ).to.be.true;
+      expect((ucsdk.enumerateDevices as sinon.SinonStub).calledTwice).to.be.true;
     });
 
-    it('asks the strategy for the silent audio stream when no device is selected', async () => {
-      const strategy = new MockMediaStrategy();
-      deviceController = new DefaultDeviceController(logger, { strategy });
+    it('uses the endpoint silent audio stream when no device is selected', async () => {
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapterWith() });
       await deviceController.startAudioInput(null);
-      expect(strategy.silentAudioStreamCalls).to.equal(1);
+      expect((ucsdk.getUserMedia as sinon.SinonStub).calledOnceWith({ audio: true })).to.be.true;
     });
 
-    it('warns and falls back to the browser track when the strategy has no silent stream', async () => {
-      const strategy = new MockMediaStrategy([], null);
-      const watcher = new WatchingLogger('has no silent audio stream');
-      deviceController = new DefaultDeviceController(watcher, { strategy });
-      await deviceController.startAudioInput(null);
-      expect(strategy.silentAudioStreamCalls).to.equal(1);
-      expect(watcher.matches.length).to.be.greaterThan(0);
+    it('falls back to the Web Audio track when the endpoint has no silent stream', async () => {
+      const adapter = adapterWith();
+      (ucsdk.getUserMedia as sinon.SinonStub).rejects(new Error('no device'));
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapter });
+      const stream = await deviceController.startAudioInput(null);
+      expect(stream).to.exist;
     });
 
-    it('uses StandardStrategy when none is supplied', async () => {
+    it('uses the browser without an adapter', async () => {
       deviceController = new DefaultDeviceController(logger);
       const spy = sinon.spy(navigator.mediaDevices, 'getUserMedia');
       await deviceController.startAudioInput(stringDeviceId);

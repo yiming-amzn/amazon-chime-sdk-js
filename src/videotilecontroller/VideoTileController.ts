@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import MediaStrategy from '../strategies/MediaStrategy';
+import MediaElementBinder from '../mediaelementbinder/MediaElementBinder';
 import { VideoElementFrameMetrics } from '../videotile/VideoElementFrameMonitor';
 import VideoTile from '../videotile/VideoTile';
 import VideoTileState from '../videotile/VideoTileState';
@@ -66,8 +66,8 @@ export interface VideoTileResolutionObserver {
 export default interface VideoTileController {
   keepLastFrameWhenPaused?: boolean | undefined;
 
-  /** The meeting session's media strategy, read by tiles to register video elements. */
-  strategy?: MediaStrategy | null;
+  /** Registers video elements with the platform that renders them, read by tiles. */
+  mediaElements?: MediaElementBinder | null;
 
   /**
    * Binds the video element to the tile if it exists for the provided tileId.

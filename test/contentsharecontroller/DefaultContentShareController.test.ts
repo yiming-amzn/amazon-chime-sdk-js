@@ -20,12 +20,11 @@ import MeetingSessionCredentials from '../../src/meetingsession/MeetingSessionCr
 import MeetingSessionStatus from '../../src/meetingsession/MeetingSessionStatus';
 import MeetingSessionStatusCode from '../../src/meetingsession/MeetingSessionStatusCode';
 import MeetingSessionURLs from '../../src/meetingsession/MeetingSessionURLs';
-import StandardStrategy from '../../src/strategies/StandardStrategy';
 import { Maybe } from '../../src/utils/Types';
 import DefaultSimulcastUplinkPolicyForContentShare from '../../src/videouplinkbandwidthpolicy/DefaultSimulcastUplinkPolicyForContentShare';
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder, { StoppableMediaStreamTrack } from '../dommock/DOMMockBuilder';
-import MockMediaStrategy from '../strategies/MockMediaStrategy';
+import { makeCitrixAdapter } from '../vdi/FakeCitrixUCSDK';
 import { createFakeTimers } from '../utils/fakeTimerHelper';
 
 describe('DefaultContentShareController', () => {
@@ -138,25 +137,14 @@ describe('DefaultContentShareController', () => {
     );
   });
 
-  it('carries the media strategy onto the content share configuration', () => {
+  it('keeps content share in the browser when the meeting has a vdi adapter', () => {
     const meetingSessionConfigure = makeSessionConfiguration();
-    const strategy = new MockMediaStrategy();
-    meetingSessionConfigure.strategy = strategy;
+    meetingSessionConfigure.vdiAdapter = makeCitrixAdapter();
     const contentShareMeetingSessionConfigure =
       DefaultContentShareController.createContentShareMeetingSessionConfigure(
         meetingSessionConfigure
       );
-    expect(contentShareMeetingSessionConfigure.strategy).to.equal(strategy);
-  });
-
-  it('uses StandardStrategy for content share when the strategy does not support it', () => {
-    const meetingSessionConfigure = makeSessionConfiguration();
-    meetingSessionConfigure.strategy = new MockMediaStrategy([], undefined, 'Mock', false);
-    const contentShareMeetingSessionConfigure =
-      DefaultContentShareController.createContentShareMeetingSessionConfigure(
-        meetingSessionConfigure
-      );
-    expect(contentShareMeetingSessionConfigure.strategy).to.be.instanceOf(StandardStrategy);
+    expect(contentShareMeetingSessionConfigure.vdiAdapter).to.be.undefined;
   });
 
   describe('content share APIs', () => {

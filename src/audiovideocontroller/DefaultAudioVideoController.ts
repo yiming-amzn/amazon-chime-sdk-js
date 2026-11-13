@@ -88,6 +88,7 @@ import SimulcastContentShareTransceiverController from '../transceivercontroller
 import SimulcastTransceiverController from '../transceivercontroller/SimulcastTransceiverController';
 import VideoOnlyTransceiverController from '../transceivercontroller/VideoOnlyTransceiverController';
 import { Maybe } from '../utils/Types';
+import VDIComponents from '../vdi/VDIComponents';
 import DefaultVideoCaptureAndEncodeParameter from '../videocaptureandencodeparameter/DefaultVideoCaptureAndEncodeParameter';
 import AllHighestVideoBandwidthPolicy from '../videodownlinkbandwidthpolicy/AllHighestVideoBandwidthPolicy';
 import { convertVideoPreferencesToSignalingClientVideoSubscriptionConfiguration } from '../videodownlinkbandwidthpolicy/VideoPreferences';
@@ -210,7 +211,10 @@ export default class DefaultAudioVideoController
       this,
       this._logger
     );
-    this._audioMixController = new DefaultAudioMixController(this._logger, configuration.strategy);
+    this._audioMixController = new DefaultAudioMixController(
+      this._logger,
+      VDIComponents.mediaElementBinder(configuration.vdiAdapter)
+    );
     this._mediaStreamBroker.addMediaStreamBrokerObserver(this._audioMixController);
     this.meetingSessionContext.logger = this._logger;
     this._eventController = eventController;

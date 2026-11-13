@@ -8,7 +8,8 @@ import AudioVideoTileController from '../../src/audiovideocontroller/AudioVideoC
 import NoOpAudioVideoTileController from '../../src/audiovideocontroller/NoOpAudioVideoController';
 import AudioVideoObserver from '../../src/audiovideoobserver/AudioVideoObserver';
 import VideoQualitySettings from '../../src/devicecontroller/VideoQualitySettings';
-import { STANDARD_STRATEGY } from '../../src/strategies/MediaStrategy';
+import DefaultMediaElementBinder from '../../src/mediaelementbinder/DefaultMediaElementBinder';
+import CitrixMediaElementBinder from '../../src/vdi/CitrixMediaElementBinder';
 import NoOpVideoElementFactory from '../../src/videoelementfactory/NoOpVideoElementFactory';
 import VideoTileState from '../../src/videotile/VideoTileState';
 import DefaultVideoTileController from '../../src/videotilecontroller/DefaultVideoTileController';
@@ -17,7 +18,8 @@ import VideoTileController, {
 } from '../../src/videotilecontroller/VideoTileController';
 import DefaultVideoTileFactory from '../../src/videotilefactory/DefaultVideoTileFactory';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
-import MockMediaStrategy from '../strategies/MockMediaStrategy';
+import MockMediaElementBinder from '../mediaelementbinder/MockMediaElementBinder';
+import { makeCitrixAdapter } from '../vdi/FakeCitrixUCSDK';
 import { createFakeTimers } from '../utils/fakeTimerHelper';
 
 describe('DefaultVideoTileController', () => {
@@ -195,9 +197,9 @@ describe('DefaultVideoTileController', () => {
         .true;
     });
 
-    it('releases the element with the vdi strategy when cleaning it up', () => {
-      const strategy = new MockMediaStrategy();
-      tileController.strategy = strategy;
+    it('releases the element with the binder when cleaning it up', () => {
+      const binder = new MockMediaElementBinder();
+      tileController.mediaElements = binder;
       let videoElement = document.createElement('video');
       const tileId = tileController.addVideoTile().id();
       tileController.bindVideoElement(tileId, videoElement);
@@ -205,30 +207,29 @@ describe('DefaultVideoTileController', () => {
       tile.bindVideoStream('attendee', false, mockMediaStream, 1, 1, 1);
 
       tileController.unbindVideoElement(tileId);
-      expect(strategy.unboundVideoElements).to.deep.equal([videoElement]);
+      expect(binder.unboundVideoElements).to.deep.equal([videoElement]);
       videoElement = null;
     });
   });
 
-  describe('strategy', () => {
-    it('takes the strategy from the meeting session configuration', () => {
-      const strategy = new MockMediaStrategy();
-      audioVideoController.configuration.strategy = strategy;
+  describe('media element binder', () => {
+    it('is created for the configured vdi adapter', () => {
+      audioVideoController.configuration.vdiAdapter = makeCitrixAdapter();
       const controller = new DefaultVideoTileController(
         new DefaultVideoTileFactory(),
         audioVideoController,
         audioVideoController.logger
       );
-      expect(controller.strategy).to.equal(strategy);
+      expect(controller.mediaElements).to.be.instanceOf(CitrixMediaElementBinder);
     });
 
-    it('is StandardStrategy when the configuration does not supply one', () => {
+    it('is the browser binder without an adapter', () => {
       const controller = new DefaultVideoTileController(
         new DefaultVideoTileFactory(),
         audioVideoController,
         audioVideoController.logger
       );
-      expect(controller.strategy.getStrategyName()).to.equal(STANDARD_STRATEGY);
+      expect(controller.mediaElements).to.be.instanceOf(DefaultMediaElementBinder);
     });
   });
 

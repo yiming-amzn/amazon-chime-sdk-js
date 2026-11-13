@@ -9,13 +9,15 @@ import EventController from '../eventcontroller/EventController';
 import Logger from '../logger/Logger';
 import DefaultMediaDeviceFactory from '../mediadevicefactory/DefaultMediaDeviceFactory';
 import DeviceControllerBasedMediaStreamBroker from '../mediastreambroker/DeviceControllerBasedMediaStreamBroker';
+import MediaDeviceProvider from '../mediadeviceprovider/MediaDeviceProvider';
+import MediaElementBinder from '../mediaelementbinder/MediaElementBinder';
 import MediaStreamBrokerObserver from '../mediastreambrokerobserver/MediaStreamBrokerObserver';
 import AsyncScheduler from '../scheduler/AsyncScheduler';
 import StatsCollector from '../statscollector/StatsCollector';
-import MediaStrategy, { isVDIStrategy } from '../strategies/MediaStrategy';
-import StandardStrategy from '../strategies/StandardStrategy';
 import PromiseQueue from '../utils/PromiseQueue';
 import { Maybe } from '../utils/Types';
+import VDIAdapter from '../vdi/VDIAdapter';
+import VDIComponents from '../vdi/VDIComponents';
 import DefaultVideoTransformDevice from '../videoframeprocessor/DefaultVideoTransformDevice';
 import DefaultVideoTile from '../videotile/DefaultVideoTile';
 import AudioInputDevice from './AudioInputDevice';
@@ -64,7 +66,7 @@ export default class DefaultDeviceController
   private mediaStreamBrokerObservers: Set<MediaStreamBrokerObserver> =
     new Set<MediaStreamBrokerObserver>();
   private deviceLabelTrigger = (): Promise<MediaStream> => {
-    return this.strategy.getUserMedia({ audio: true, video: true });
+    return this.mediaDevices.getUserMedia({ audio: true, video: true });
   };
   private audioInputDestinationNode: MediaStreamAudioDestinationNode | null = null;
   private audioInputSourceNode: MediaStreamAudioSourceNode | null = null;
@@ -96,18 +98,15 @@ export default class DefaultDeviceController
     }
   };
 
-  private strategy: MediaStrategy;
+  private mediaDevices: MediaDeviceProvider;
+  private mediaElements: MediaElementBinder;
 
   // The join waits for an audio packet, so a sending track is needed even with no microphone.
   private async emptyAudioStream(): Promise<MediaStream> {
-    const stream = await this.strategy.createSilentAudioStream();
-    if (stream) {
-      return stream;
-    }
-    if (isVDIStrategy(this.strategy)) {
-      this.logger.warn('VDI strategy has no silent audio stream; the join may not complete');
-    }
-    return DefaultDeviceController.createEmptyAudioDevice() as MediaStream;
+    return (
+      (await this.mediaDevices.createSilentAudioStream()) ??
+      (DefaultDeviceController.createEmptyAudioDevice() as MediaStream)
+    );
   }
 
   constructor(
@@ -115,8 +114,8 @@ export default class DefaultDeviceController
     options?: {
       enableWebAudio?: boolean;
       useMediaConstraintsFallback?: boolean;
-      /** Media strategy for device acquisition. Defaults to [[StandardStrategy]]. */
-      strategy?: MediaStrategy;
+      /** Acquires devices on a virtual desktop's endpoint. Without one, the browser's. */
+      vdiAdapter?: VDIAdapter;
     },
     private browserBehavior: ExtendedBrowserBehavior = new DefaultBrowserBehavior(),
     public eventController?: EventController,
@@ -125,11 +124,12 @@ export default class DefaultDeviceController
     const {
       enableWebAudio = false,
       useMediaConstraintsFallback = true,
-      strategy = new StandardStrategy(),
+      vdiAdapter,
     } = options || {};
     this.useWebAudio = enableWebAudio;
     this.useMediaConstraintsFallback = useMediaConstraintsFallback;
-    this.strategy = strategy;
+    this.mediaDevices = VDIComponents.mediaDeviceProvider(vdiAdapter);
+    this.mediaElements = VDIComponents.mediaElementBinder(vdiAdapter);
 
     this.videoInputQualitySettings = new VideoQualitySettings(
       DefaultDeviceController.defaultVideoWidth,
@@ -557,7 +557,7 @@ export default class DefaultDeviceController
         : this.activeDevices['video'].stream,
       element,
       true,
-      this.strategy
+      this.mediaElements
     );
     this.trace('startVideoPreviewForVideoInput', element.id);
   }
@@ -567,7 +567,7 @@ export default class DefaultDeviceController
       element,
       false,
       undefined,
-      this.strategy
+      this.mediaElements
     );
     this.trace('stopVideoPreviewForVideoInput', element.id);
   }
@@ -874,7 +874,7 @@ export default class DefaultDeviceController
       this.deviceInfoCache = [];
       return;
     }
-    let devices = await this.strategy.enumerateDevices();
+    let devices = await this.mediaDevices.enumerateDevices();
     let hasDeviceLabels = true;
     for (const device of devices) {
       if (!device.label) {
@@ -886,7 +886,7 @@ export default class DefaultDeviceController
       try {
         this.logger.info('attempting to trigger media device labels since they are hidden');
         const triggerStream = await this.deviceLabelTrigger();
-        devices = await this.strategy.enumerateDevices();
+        devices = await this.mediaDevices.enumerateDevices();
         for (const track of triggerStream.getTracks()) {
           track.stop();
         }
@@ -1177,7 +1177,7 @@ export default class DefaultDeviceController
         newDevice.stream = stream;
         newDevice.constraints = proposedConstraints;
       } else {
-        newDevice.stream = await this.strategy.getUserMedia(proposedConstraints);
+        newDevice.stream = await this.mediaDevices.getUserMedia(proposedConstraints);
         newDevice.constraints = proposedConstraints;
       }
       await this.handleNewInputDevice(kind, newDevice);
@@ -1213,7 +1213,7 @@ export default class DefaultDeviceController
               `retry requesting new ${kind} device with minimal constraint ${fallbackConstraintsJSON}`
             );
             try {
-              newDevice.stream = await this.strategy.getUserMedia(fallbackConstraints);
+              newDevice.stream = await this.mediaDevices.getUserMedia(fallbackConstraints);
               newDevice.constraints = fallbackConstraints;
               await this.handleNewInputDevice(kind, newDevice);
               hasError = false;

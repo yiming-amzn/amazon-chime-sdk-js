@@ -20,7 +20,6 @@ import EventController from '../eventcontroller/EventController';
 import Logger from '../logger/Logger';
 import DeviceControllerBasedMediaStreamBroker from '../mediastreambroker/DeviceControllerBasedMediaStreamBroker';
 import DefaultReconnectController from '../reconnectcontroller/DefaultReconnectController';
-import { isVDIStrategy } from '../strategies/MediaStrategy';
 import SimulcastUplinkPolicy from '../videouplinkbandwidthpolicy/SimulcastUplinkPolicy';
 import VideoUplinkBandwidthPolicy from '../videouplinkbandwidthpolicy/VideoUplinkBandwidthPolicy';
 import DefaultWebSocketAdapter from '../websocketadapter/DefaultWebSocketAdapter';
@@ -60,7 +59,7 @@ export default class DefaultMeetingSession implements MeetingSession, Destroyabl
 
     this.encodedTransformWorkerManager = new DefaultEncodedTransformWorkerManager(
       this._logger,
-      isVDIStrategy(configuration.strategy)
+      !!configuration.vdiAdapter
     );
 
     this.audioVideoController = new DefaultAudioVideoController(
@@ -83,7 +82,7 @@ export default class DefaultMeetingSession implements MeetingSession, Destroyabl
     this.logger.info(`MeetingFeatures: ${JSON.stringify(configuration.meetingFeatures)}`);
     this.contentShareEncodedTransformWorkerManager = new DefaultEncodedTransformWorkerManager(
       this._logger,
-      isVDIStrategy(configuration.strategy)
+      !!configuration.vdiAdapter
     );
     const contentShareMediaStreamBroker = new ContentShareMediaStreamBroker(this._logger);
     this.contentShareController = new DefaultContentShareController(

@@ -9,13 +9,13 @@ import NoOpAudioVideoController from '../../src/audiovideocontroller/NoOpAudioVi
 import DevicePixelRatioMonitor from '../../src/devicepixelratiomonitor/DevicePixelRatioMonitor';
 import DevicePixelRatioObserver from '../../src/devicepixelratioobserver/DevicePixelRatioObserver';
 import TimeoutScheduler from '../../src/scheduler/TimeoutScheduler';
-import StandardStrategy from '../../src/strategies/StandardStrategy';
+import DefaultMediaElementBinder from '../../src/mediaelementbinder/DefaultMediaElementBinder';
 import NoOpVideoElementFactory from '../../src/videoelementfactory/NoOpVideoElementFactory';
 import DefaultVideoTile from '../../src/videotile/DefaultVideoTile';
 import VideoTileController from '../../src/videotilecontroller/VideoTileController';
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
-import MockMediaStrategy from '../strategies/MockMediaStrategy';
+import MockMediaElementBinder from '../mediaelementbinder/MockMediaElementBinder';
 
 class InvokingDevicePixelRatioMonitor implements DevicePixelRatioMonitor {
   private observerQueue: Set<DevicePixelRatioObserver>;
@@ -602,28 +602,28 @@ describe('DefaultVideoTile', () => {
     });
   });
 
-  describe('media strategy element binding', () => {
-    it('registers the element with the strategy before assigning the stream', () => {
-      const strategy = new MockMediaStrategy();
-      tileController.strategy = strategy;
+  describe('media element binding', () => {
+    it('registers the element with the binder before assigning the stream', () => {
+      const binder = new MockMediaElementBinder();
+      tileController.mediaElements = binder;
       tile = new DefaultVideoTile(tileId, true, tileController, monitor);
 
       const videoElement = videoElementFactory.create();
       tile.bindVideoElement(videoElement);
       tile.bindVideoStream('attendee', true, mockVideoStream, 1, 1, 1);
 
-      expect(strategy.boundVideoElements.length).to.equal(1);
-      expect(strategy.boundVideoElements[0][0]).to.equal(videoElement);
-      expect(strategy.boundVideoElements[0][1]).to.equal(mockVideoStream);
+      expect(binder.boundVideoElements.length).to.equal(1);
+      expect(binder.boundVideoElements[0][0]).to.equal(videoElement);
+      expect(binder.boundVideoElements[0][1]).to.equal(mockVideoStream);
       // The element still carried the factory's initial value, so the call landed
       // ahead of the assignment rather than after it.
-      expect(strategy.srcObjectAtBindTime[0]).to.not.equal(mockVideoStream);
+      expect(binder.srcObjectAtBindTime[0]).to.not.equal(mockVideoStream);
       expect(videoElement.srcObject).to.equal(mockVideoStream);
     });
 
-    it('releases the element with the strategy when the stream is cleared', () => {
-      const strategy = new MockMediaStrategy();
-      tileController.strategy = strategy;
+    it('releases the element with the binder when the stream is cleared', () => {
+      const binder = new MockMediaElementBinder();
+      tileController.mediaElements = binder;
       tile = new DefaultVideoTile(tileId, true, tileController, monitor);
 
       const videoElement = videoElementFactory.create();
@@ -631,13 +631,13 @@ describe('DefaultVideoTile', () => {
       tile.bindVideoStream('attendee', true, mockVideoStream, 1, 1, 1);
       tile.bindVideoStream('attendee', true, null, 1, 1, 1);
 
-      expect(strategy.unboundVideoElements).to.deep.equal([videoElement]);
+      expect(binder.unboundVideoElements).to.deep.equal([videoElement]);
       expect(videoElement.srcObject).to.equal(null);
     });
 
     it('keeps the element registered when a pause leaves the last frame in place', () => {
-      const strategy = new MockMediaStrategy();
-      tileController.strategy = strategy;
+      const binder = new MockMediaElementBinder();
+      tileController.mediaElements = binder;
       tileController.keepLastFrameWhenPaused = true;
       tile = new DefaultVideoTile(tileId, false, tileController, monitor);
 
@@ -646,13 +646,13 @@ describe('DefaultVideoTile', () => {
       tile.bindVideoStream('attendee', false, mockVideoStream, 1, 1, 1);
       tile.pause();
 
-      expect(strategy.unboundVideoElements.length).to.equal(0);
+      expect(binder.unboundVideoElements.length).to.equal(0);
       expect(videoElement.srcObject).to.equal(mockVideoStream);
     });
 
     it('releases the element on a pause that clears the stream', () => {
-      const strategy = new MockMediaStrategy();
-      tileController.strategy = strategy;
+      const binder = new MockMediaElementBinder();
+      tileController.mediaElements = binder;
       tileController.keepLastFrameWhenPaused = false;
       tile = new DefaultVideoTile(tileId, false, tileController, monitor);
 
@@ -661,12 +661,12 @@ describe('DefaultVideoTile', () => {
       tile.bindVideoStream('attendee', false, mockVideoStream, 1, 1, 1);
       tile.pause();
 
-      expect(strategy.unboundVideoElements).to.deep.equal([videoElement]);
+      expect(binder.unboundVideoElements).to.deep.equal([videoElement]);
     });
 
     it('releases the element when the tile is destroyed', () => {
-      const strategy = new MockMediaStrategy();
-      tileController.strategy = strategy;
+      const binder = new MockMediaElementBinder();
+      tileController.mediaElements = binder;
       tile = new DefaultVideoTile(tileId, true, tileController, monitor);
 
       const videoElement = videoElementFactory.create();
@@ -674,11 +674,11 @@ describe('DefaultVideoTile', () => {
       tile.bindVideoStream('attendee', true, mockVideoStream, 1, 1, 1);
       tile.destroy();
 
-      expect(strategy.unboundVideoElements).to.deep.equal([videoElement]);
+      expect(binder.unboundVideoElements).to.deep.equal([videoElement]);
     });
 
-    it('only assigns srcObject with StandardStrategy', () => {
-      tileController.strategy = new StandardStrategy();
+    it('only assigns srcObject with the default binder', () => {
+      tileController.mediaElements = new DefaultMediaElementBinder();
       tile = new DefaultVideoTile(tileId, true, tileController, monitor);
 
       const videoElement = videoElementFactory.create();
@@ -690,7 +690,7 @@ describe('DefaultVideoTile', () => {
       expect(videoElement.srcObject).to.equal(null);
     });
 
-    it('defaults the static helpers to StandardStrategy', () => {
+    it('defaults the static helpers to the default binder', () => {
       const videoElement = videoElementFactory.create();
       DefaultVideoTile.connectVideoStreamToVideoElement(mockVideoStream, videoElement, true);
       expect(videoElement.srcObject).to.equal(mockVideoStream);

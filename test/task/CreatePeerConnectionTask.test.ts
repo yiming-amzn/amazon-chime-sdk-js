@@ -27,7 +27,7 @@ import DefaultVideoTileFactory from '../../src/videotilefactory/DefaultVideoTile
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder, { StoppableMediaStreamTrack } from '../dommock/DOMMockBuilder';
 import SDPMock from '../sdp/SDPMock';
-import MockMediaStrategy from '../strategies/MockMediaStrategy';
+import { makeCitrixAdapter, makeUcsdk } from '../vdi/FakeCitrixUCSDK';
 import { createFakeTimers, tick } from '../utils/fakeTimerHelper';
 
 describe('CreatePeerConnectionTask', () => {
@@ -1087,18 +1087,21 @@ describe('CreatePeerConnectionTask', () => {
       logSpy.restore();
     });
   });
-  describe('media strategy', () => {
-    it('creates the peer connection through the strategy', async () => {
-      const strategy = new MockMediaStrategy();
+  describe('vdi adapter', () => {
+    it('creates the peer connection for the configured adapter', async () => {
+      // The task listens on the connection, so the redirected one must be a mock peer.
+      class RedirectedPeerConnection extends RTCPeerConnection {}
+      const ucsdk = makeUcsdk();
+      ucsdk.CitrixPeerConnection = RedirectedPeerConnection;
       context.meetingSessionConfiguration = new MeetingSessionConfiguration();
-      context.meetingSessionConfiguration.strategy = strategy;
+      context.meetingSessionConfiguration.vdiAdapter = makeCitrixAdapter(ucsdk);
 
       await new CreatePeerConnectionTask(context).run();
 
-      expect(strategy.createPeerConnectionCalls).to.equal(1);
+      expect(context.peer).to.be.instanceOf(RedirectedPeerConnection);
     });
 
-    it('uses StandardStrategy when none is supplied', async () => {
+    it('creates a browser peer connection without a configuration', async () => {
       context.meetingSessionConfiguration = undefined;
 
       await new CreatePeerConnectionTask(context).run();

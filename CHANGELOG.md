@@ -9,21 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added `MediaStrategy`, which supplies the peer connection, `getUserMedia` and `enumerateDevices` calls the SDK makes. `StandardStrategy` calls the browser and is the default, so behaviour is unchanged unless an application supplies another. Supply a strategy through `MeetingSessionConfiguration.strategy` and the `strategy` option of `DefaultDeviceController`. See the Media Strategies guide.
-- Added the `MediaStrategy` members a strategy needs when media runs outside the browser: `getStrategyName()` and `STANDARD_STRATEGY`, `supportsContentShare`, the silent audio stream used when no microphone is selected, video and audio element binding, and `dispose()`. `StandardStrategy` keeps the browser behaviour for all of them.
-- Added `CitrixVDIStrategy`, which redirects media to the Citrix endpoint through an initialized Citrix UCSDK object that the application passes in, together with the window handle from the Citrix Bootstrap. The SDK does not include the UCSDK. It redirects the main connection, the camera and the microphone, and sets `supportsContentShare` to `false`, so content share stays in the browser. Its `getStrategyName()` returns `CITRIX_VDI_STRATEGY`. `CitrixVDIStrategy.connect` initializes the Bootstrap and the UCSDK itself and waits for the endpoint to connect, for pages where nothing else has initialized them.
+- Added `VDIAdapter`, which lets a meeting run its media on a virtual desktop's endpoint instead of in the browser. Supply one through `MeetingSessionConfiguration.vdiAdapter` and the `vdiAdapter` option of `DefaultDeviceController`; without one the SDK uses the browser as before. The SDK builds its peer connection, device access and video and audio element registration from `PeerConnectionFactory`, `MediaDeviceProvider` and `MediaElementBinder`, created for the adapter by `VDIComponents`. See the VDI guide.
+- Added `CitrixVDIAdapter` for Citrix HDX media redirection, with the Citrix peer connection, device and element components. The application passes in an initialized Citrix UCSDK object and the window handle from the Citrix Bootstrap, or calls `CitrixVDIAdapter.connect` to initialize them; the SDK does not include the UCSDK. Content share stays in the browser.
 
 ### Removed
 
 ### Changed
 
-- `DefaultVideoTile.connectVideoStreamToVideoElement` and `DefaultVideoTile.disconnectVideoStreamFromVideoElement` take the strategy as a new optional trailing argument, defaulting to `StandardStrategy`.
+- `DefaultVideoTile.connectVideoStreamToVideoElement` and `DefaultVideoTile.disconnectVideoStreamFromVideoElement` take a `MediaElementBinder` as a new optional trailing argument, defaulting to `DefaultMediaElementBinder`.
 
 ### Fixed
 
 - Fixed remote video staying black when a transceiver reports no `mid` after `setLocalDescription`, as Citrix redirected transceivers can. The `mid` is now derived from the local description.
 - Skip `replaceTrack(null)` on a sender that has no track, which some redirecting platforms reject.
-- With a strategy other than `StandardStrategy`, encoded transforms are skipped on senders and receivers that are not native `RTCRtpSender` or `RTCRtpReceiver` objects instead of throwing. Without one, the SDK still throws as before.
+- With a `vdiAdapter`, encoded transforms are skipped on senders and receivers that are not native `RTCRtpSender` or `RTCRtpReceiver` objects instead of throwing. Without one, the SDK still throws as before.
 
 ## [3.33.0] - 2026-07-08
 

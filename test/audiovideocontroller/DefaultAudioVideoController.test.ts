@@ -85,7 +85,7 @@ import DefaultWebSocketAdapter from '../../src/websocketadapter/DefaultWebSocket
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
 import ChromeSDPMock from '../sdp/ChromeSDPMock';
-import MockMediaStrategy from '../strategies/MockMediaStrategy';
+import { citrixStream, makeCitrixAdapter } from '../vdi/FakeCitrixUCSDK';
 import { createFakeTimers, tick as tickHelper } from '../utils/fakeTimerHelper';
 
 const defaultDelay = new DOMMockBehavior().asyncWaitMs * 5;
@@ -4501,10 +4501,10 @@ describe('DefaultAudioVideoController', () => {
     });
   });
 
-  describe('media strategy', () => {
-    it('gives the configured strategy to the audio mix controller', async () => {
-      const strategy = new MockMediaStrategy();
-      configuration.strategy = strategy;
+  describe('vdi adapter', () => {
+    it('gives the audio mix controller the components for the configured adapter', async () => {
+      const adapter = makeCitrixAdapter();
+      configuration.vdiAdapter = adapter;
       audioVideoController = new DefaultAudioVideoController(
         configuration,
         new NoOpDebugLogger(),
@@ -4514,16 +4514,13 @@ describe('DefaultAudioVideoController', () => {
       );
 
       const element = new HTMLAudioElement();
-      const stream = new MediaStream();
       await audioVideoController.audioMixController.bindAudioElement(element);
-      await audioVideoController.audioMixController.bindAudioStream(stream);
+      await audioVideoController.audioMixController.bindAudioStream(citrixStream());
 
-      expect(strategy.boundAudioElements.length).to.equal(1);
-      expect(strategy.boundAudioElements[0][0]).to.equal(element);
-      expect(strategy.boundAudioElements[0][1]).to.equal(stream);
+      expect((adapter.ucsdk.mapAudioElement as sinon.SinonStub).calledOnceWith(element)).to.be.true;
     });
 
-    it('uses StandardStrategy for the audio mix controller when none is configured', async () => {
+    it('uses the browser components for the audio mix controller without an adapter', async () => {
       audioVideoController = new DefaultAudioVideoController(
         configuration,
         new NoOpDebugLogger(),
