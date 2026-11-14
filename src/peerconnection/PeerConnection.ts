@@ -14,6 +14,9 @@ export default interface PeerConnection {
   readonly iceConnectionState: RTCIceConnectionState;
   readonly connectionState: RTCPeerConnectionState;
 
+  /** False when its senders and receivers cannot carry an encoded transform. */
+  readonly supportsEncodedTransforms: boolean;
+
   addEventListener<K extends keyof RTCPeerConnectionEventMap>(
     type: K,
     listener: (this: RTCPeerConnection, event: RTCPeerConnectionEventMap[K]) => void
@@ -31,6 +34,12 @@ export default interface PeerConnection {
   ): RTCRtpTransceiver;
   getTransceivers(): RTCRtpTransceiver[];
   getReceivers(): RTCRtpReceiver[];
+
+  /** The `mid` of one of this connection's transceivers. */
+  midOf(transceiver: RTCRtpTransceiver): string | null;
+
+  /** Replaces the track a sender of this connection sends. */
+  replaceTrack(sender: RTCRtpSender, track: MediaStreamTrack | null): Promise<void>;
 
   createOffer(options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit>;
   setLocalDescription(description?: RTCLocalSessionDescriptionInit): Promise<void>;

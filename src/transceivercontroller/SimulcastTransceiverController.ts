@@ -104,7 +104,7 @@ export default class SimulcastTransceiverController extends DefaultTransceiverCo
         streams: [this.defaultMediaStream],
       });
 
-      if (this.encodedTransformWorkerManager?.isEnabled()) {
+      if (this.canUseEncodedTransforms()) {
         this.encodedTransformWorkerManager.setupAudioSenderTransform(
           this._localAudioTransceiver.sender
         );
@@ -125,7 +125,7 @@ export default class SimulcastTransceiverController extends DefaultTransceiverCo
       });
       this.configureLocalCameraHeaderExtensions();
 
-      if (this.encodedTransformWorkerManager?.isEnabled()) {
+      if (this.canUseEncodedTransforms()) {
         this.encodedTransformWorkerManager.setupVideoSenderTransform(
           this._localCameraTransceiver.sender
         );

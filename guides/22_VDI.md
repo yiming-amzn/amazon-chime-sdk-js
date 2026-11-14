@@ -54,5 +54,5 @@ const adapter = new CitrixVDIAdapter({ ucsdk, windowHandle });
 ## Limitations
 
 - Content share always runs in the browser. Screen capture uses the browser's `getDisplayMedia`, and a browser stream cannot be sent on a redirected connection.
-- With a VDI adapter, encoded transforms are skipped on senders and receivers the browser did not create.
+- Encoded transforms (redundant audio and media metrics transforms) are not set up on a Citrix peer connection, because the endpoint encodes and decodes.
 - `MeetingManager` in amazon-chime-sdk-component-library-react creates its own `DefaultDeviceController`. Use a version that accepts a device controller, or create the meeting session yourself as shown above.

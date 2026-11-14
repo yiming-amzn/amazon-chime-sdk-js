@@ -9,20 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `PeerConnection`, the meeting's peer connection as the SDK uses it, wrapped by `DefaultPeerConnection` around a browser `RTCPeerConnection`. `AudioVideoController.rtcPeerConnection` still returns the wrapped connection.
 - Added `VDIAdapter`, which lets a meeting run its media on a virtual desktop's endpoint instead of in the browser. Supply one through `MeetingSessionConfiguration.vdiAdapter` and the `vdiAdapter` option of `DefaultDeviceController`; without one the SDK uses the browser as before. The SDK builds its peer connection, device access and video and audio element registration from `PeerConnection`, `MediaDeviceProvider` and `MediaElementBinder`, created for the adapter by `VDIComponents`. See the VDI guide.
-- Added `CitrixVDIAdapter` for Citrix HDX media redirection, with the Citrix peer connection, device and element components. The application passes in an initialized Citrix UCSDK object and the window handle from the Citrix Bootstrap, or calls `CitrixVDIAdapter.connect` to initialize them; the SDK does not include the UCSDK. Content share stays in the browser.
+- Added `CitrixVDIAdapter` for Citrix HDX media redirection, with the Citrix peer connection, device and element components. The application passes in an initialized Citrix UCSDK object and the window handle from the Citrix Bootstrap, or calls `CitrixVDIAdapter.connect` to initialize them; the SDK does not include the UCSDK. `CitrixPeerConnection` derives a `mid` the UCSDK has not bound yet from the local description, skips `replaceTrack(null)` on an empty sender, which the UCSDK rejects, and sets up no encoded transforms. Content share stays in the browser.
 
 ### Removed
 
 ### Changed
 
 - `DefaultVideoTile.connectVideoStreamToVideoElement` and `DefaultVideoTile.disconnectVideoStreamFromVideoElement` take a `MediaElementBinder` as a new optional trailing argument, defaulting to `DefaultMediaElementBinder`.
+- `AudioVideoControllerState.peer`, `TransceiverController.setPeer` and `DefaultTransceiverController.canUseHeaderExtensionApi` take a `PeerConnection` instead of an `RTCPeerConnection`.
 
 ### Fixed
-
-- Fixed remote video staying black when a transceiver reports no `mid` after `setLocalDescription`, as Citrix redirected transceivers can. The `mid` is now derived from the local description.
-- Skip `replaceTrack(null)` on a sender that has no track, which some redirecting platforms reject.
-- With a `vdiAdapter`, encoded transforms are skipped on senders and receivers that are not native `RTCRtpSender` or `RTCRtpReceiver` objects instead of throwing. Without one, the SDK still throws as before.
 
 ## [3.33.0] - 2026-07-08
 

@@ -57,10 +57,7 @@ export default class DefaultMeetingSession implements MeetingSession, Destroyabl
       deviceController.eventController = this.eventController;
     }
 
-    this.encodedTransformWorkerManager = new DefaultEncodedTransformWorkerManager(
-      this._logger,
-      !!configuration.vdiAdapter
-    );
+    this.encodedTransformWorkerManager = new DefaultEncodedTransformWorkerManager(this._logger);
 
     this.audioVideoController = new DefaultAudioVideoController(
       this._configuration,
@@ -81,8 +78,7 @@ export default class DefaultMeetingSession implements MeetingSession, Destroyabl
     this._deviceController = deviceController;
     this.logger.info(`MeetingFeatures: ${JSON.stringify(configuration.meetingFeatures)}`);
     this.contentShareEncodedTransformWorkerManager = new DefaultEncodedTransformWorkerManager(
-      this._logger,
-      !!configuration.vdiAdapter
+      this._logger
     );
     const contentShareMediaStreamBroker = new ContentShareMediaStreamBroker(this._logger);
     this.contentShareController = new DefaultContentShareController(

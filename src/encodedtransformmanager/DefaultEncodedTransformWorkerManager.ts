@@ -42,11 +42,7 @@ export default class DefaultEncodedTransformWorkerManager implements EncodedTran
     // @ts-ignore
     !!RTCRtpSender.prototype.createEncodedStreams;
 
-  /** @param skipNonNative Skip, instead of reject, a sender or receiver the browser did not create. */
-  constructor(
-    logger: Logger,
-    private skipNonNative: boolean = false
-  ) {
+  constructor(logger: Logger) {
     this.logger = logger;
 
     this.logger.info(
@@ -112,15 +108,6 @@ export default class DefaultEncodedTransformWorkerManager implements EncodedTran
     operation: 'send' | 'receive',
     mediaType: 'audio' | 'video'
   ): void {
-    const isNative =
-      operation === 'send'
-        ? senderOrReceiver instanceof RTCRtpSender
-        : senderOrReceiver instanceof RTCRtpReceiver;
-    // A redirected sender or receiver cannot carry an encoded transform.
-    if (!isNative && this.skipNonNative) {
-      this.logger.warn(`Skipping encoded transform on VDI ${operation} ${mediaType}`);
-      return;
-    }
     if (operation === 'send' && !(senderOrReceiver instanceof RTCRtpSender)) {
       throw new Error('Operation "send" requires an RTCRtpSender');
     }

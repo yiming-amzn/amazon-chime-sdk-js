@@ -553,79 +553,24 @@ describe('DefaultTransceiverController', () => {
       expect(tc.getMidForGroupId(1)).to.equal('1');
     });
 
-    describe('when a transceiver reports no mid', () => {
-      const sdp = [
-        'v=0',
-        'm=audio 9 UDP/TLS/RTP/SAVPF 111',
-        'a=mid:0',
-        'm=video 9 UDP/TLS/RTP/SAVPF 96',
-        'a=mid:1',
-        'm=video 9 UDP/TLS/RTP/SAVPF 96',
-        'a=mid:2',
-        '',
-      ].join('\r\n');
+    it('asks the peer connection for the mid', () => {
+      const transceiver = { mid: null as string | null };
+      const midOf = sinon.stub().returns('7');
+      // @ts-ignore
+      tc.peer = { midOf };
+      // @ts-ignore
+      tc.streamIdToTransceiver.set(1, transceiver);
+      expect(tc.getMidForStreamId(1)).to.equal('7');
+      expect(midOf.calledOnceWith(transceiver)).to.be.true;
+    });
 
-      function setPeer(
-        transceivers: { mid: string | null }[],
-        localSdp: string | null = sdp
-      ): void {
-        const peer = {
-          localDescription: localSdp === null ? null : { sdp: localSdp },
-          getTransceivers: () => transceivers,
-        };
-        // @ts-ignore
-        tc.peer = peer;
-      }
-
-      function mapStream(streamId: number, transceiver: { mid: string | null }): void {
-        // @ts-ignore
-        tc.streamIdToTransceiver.set(streamId, transceiver);
-      }
-
-      it('pairs unclaimed SDP mids with mid-less transceivers in order', () => {
-        const audio = { mid: '0' };
-        const first = { mid: null as string | null };
-        const second = { mid: null as string | null };
-        setPeer([audio, first, second]);
-        mapStream(1, first);
-        mapStream(2, second);
-        expect(tc.getMidForStreamId(1)).to.equal('1');
-        expect(tc.getMidForStreamId(2)).to.equal('2');
-      });
-
-      it('skips SDP mids already claimed by another transceiver', () => {
-        const claimed = { mid: '1' };
-        const midless = { mid: null as string | null };
-        setPeer([claimed, midless]);
-        mapStream(1, midless);
-        expect(tc.getMidForStreamId(1)).to.equal('0');
-      });
-
-      it('uses the only unclaimed mid when the transceiver identity is not stable', () => {
-        setPeer([{ mid: '0' }, { mid: '1' }]);
-        mapStream(1, { mid: null });
-        expect(tc.getMidForStreamId(1)).to.equal('2');
-      });
-
-      it('returns undefined when the transceiver cannot be matched', () => {
-        setPeer([{ mid: '0' }]);
-        mapStream(1, { mid: null });
-        expect(tc.getMidForStreamId(1)).to.equal(undefined);
-      });
-
-      it('returns undefined when there is no local description', () => {
-        const midless = { mid: null as string | null };
-        setPeer([midless], null);
-        mapStream(1, midless);
-        expect(tc.getMidForStreamId(1)).to.equal(undefined);
-      });
-
-      it('returns undefined when there is no peer', () => {
-        // @ts-ignore
-        tc.peer = null;
-        mapStream(1, { mid: null });
-        expect(tc.getMidForStreamId(1)).to.equal(undefined);
-      });
+    it('reads the mid from the transceiver when there is no peer connection', () => {
+      // @ts-ignore
+      tc.peer = null;
+      // @ts-ignore
+      tc.streamIdToTransceiver.set(1, { mid: '3' });
+      expect(tc.getMidForStreamId(1)).to.equal('3');
+      expect(tc.getMidForStreamId(2)).to.equal(undefined);
     });
 
     it('will allow overriding the mapping of stream id to mid', () => {
@@ -1222,6 +1167,34 @@ describe('DefaultTransceiverController', () => {
 
       expect(mockEncodedTransformWorkerManager.setupAudioSenderTransform.called).to.be.false;
       expect(mockEncodedTransformWorkerManager.setupAudioReceiverTransform.called).to.be.false;
+    });
+
+    it('does not call transform setup when the peer connection cannot carry transforms', () => {
+      const mockEncodedTransformWorkerManager = {
+        isEnabled: sinon.stub().returns(true),
+        setupAudioSenderTransform: sinon.stub(),
+        setupAudioReceiverTransform: sinon.stub(),
+        setupVideoSenderTransform: sinon.stub(),
+        setupVideoReceiverTransform: sinon.stub(),
+      };
+
+      const tcWithManager = new DefaultTransceiverController(
+        logger,
+        context.browserBehavior,
+        context,
+        // @ts-ignore
+        mockEncodedTransformWorkerManager
+      );
+
+      const peer = new DefaultPeerConnection(new RTCPeerConnection());
+      // @ts-ignore
+      peer.supportsEncodedTransforms = false;
+      tcWithManager.setPeer(peer);
+      tcWithManager.setupLocalTransceivers();
+
+      expect(mockEncodedTransformWorkerManager.setupAudioSenderTransform.called).to.be.false;
+      expect(mockEncodedTransformWorkerManager.setupAudioReceiverTransform.called).to.be.false;
+      expect(mockEncodedTransformWorkerManager.setupVideoSenderTransform.called).to.be.false;
     });
 
     it('calls setupVideoReceiverTransform on track event when transform not already set', () => {

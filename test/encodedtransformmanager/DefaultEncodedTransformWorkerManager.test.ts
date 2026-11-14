@@ -200,18 +200,6 @@ describe('DefaultEncodedTransformWorkerManager', () => {
         'Operation "send" requires an RTCRtpSender'
       );
     });
-
-    it('skips a non-native sender under VDI', async () => {
-      const vdiManager = new DefaultEncodedTransformWorkerManager(logger, true);
-      await vdiManager.start();
-      // @ts-ignore
-      const receiver = new RTCRtpReceiver(new MediaStreamTrack('audio-track', 'audio'));
-      // @ts-ignore
-      expect(() => vdiManager.setupAudioSenderTransform(receiver)).to.not.throw();
-      // @ts-ignore
-      expect(receiver.transform).to.be.undefined;
-      await vdiManager.stop();
-    });
   });
 
   describe('setupAudioReceiverTransform', () => {
@@ -236,18 +224,6 @@ describe('DefaultEncodedTransformWorkerManager', () => {
       expect(() => manager.setupAudioReceiverTransform(sender)).to.throw(
         'Operation "receive" requires an RTCRtpReceiver'
       );
-    });
-
-    it('skips a non-native receiver under VDI', async () => {
-      const vdiManager = new DefaultEncodedTransformWorkerManager(logger, true);
-      await vdiManager.start();
-      // @ts-ignore
-      const sender = new RTCRtpSender(new MediaStreamTrack('audio-track', 'audio'));
-      // @ts-ignore
-      expect(() => vdiManager.setupAudioReceiverTransform(sender)).to.not.throw();
-      // @ts-ignore
-      expect(sender.transform).to.be.undefined;
-      await vdiManager.stop();
     });
   });
 

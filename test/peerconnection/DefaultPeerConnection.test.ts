@@ -47,6 +47,21 @@ describe('DefaultPeerConnection', () => {
     expect(new DefaultPeerConnection({} as RTCPeerConnection).hasTransceivers()).to.be.false;
   });
 
+  it('carries encoded transforms', () => {
+    expect(peer.supportsEncodedTransforms).to.be.true;
+  });
+
+  it('reads the mid from the transceiver', () => {
+    expect(peer.midOf({ mid: '2' } as RTCRtpTransceiver)).to.equal('2');
+    expect(peer.midOf({ mid: null } as RTCRtpTransceiver)).to.equal(null);
+  });
+
+  it('replaces the track on the sender', async () => {
+    const sender = { replaceTrack: sinon.stub().resolves() };
+    await peer.replaceTrack(sender as unknown as RTCRtpSender, null);
+    expect(sender.replaceTrack.calledOnceWith(null)).to.be.true;
+  });
+
   it('forwards every call to the wrapped connection', async () => {
     const calls = [
       'addTransceiver',

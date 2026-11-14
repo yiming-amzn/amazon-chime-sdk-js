@@ -7,7 +7,6 @@ import EncodedTransformWorkerManager from '../encodedtransformmanager/EncodedTra
 import Logger from '../logger/Logger';
 import PeerConnection from '../peerconnection/PeerConnection';
 import RedundantAudioRecoveryMetricsObserver from '../redundantaudiorecoverymetricsobserver/RedundantAudioRecoveryMetricsObserver';
-import SDP from '../sdp/SDP';
 import VideoStreamIdSet from '../videostreamidset/VideoStreamIdSet';
 import VideoStreamIndex from '../videostreamindex/VideoStreamIndex';
 import TransceiverController from './TransceiverController';
@@ -162,11 +161,15 @@ export default class DefaultTransceiverController implements TransceiverControll
       this.logger.info(
         `Applying video receiver transform to track ${event.track.id} not set after addTransceiver`
       );
-      if (event.track.kind === 'video' && this.encodedTransformWorkerManager?.isEnabled()) {
+      if (event.track.kind === 'video' && this.canUseEncodedTransforms()) {
         this.encodedTransformWorkerManager.setupVideoReceiverTransform(event.receiver);
       }
     }
   };
+
+  protected canUseEncodedTransforms(): boolean {
+    return !!this.encodedTransformWorkerManager?.isEnabled() && this.peer.supportsEncodedTransforms;
+  }
 
   useTransceivers(): boolean {
     return !!this.peer && this.peer.hasTransceivers();
@@ -204,7 +207,7 @@ export default class DefaultTransceiverController implements TransceiverControll
         streams: [this.defaultMediaStream],
       });
 
-      if (this.encodedTransformWorkerManager?.isEnabled()) {
+      if (this.canUseEncodedTransforms()) {
         this.encodedTransformWorkerManager.setupAudioSenderTransform(
           this._localAudioTransceiver.sender
         );
@@ -221,7 +224,7 @@ export default class DefaultTransceiverController implements TransceiverControll
       });
       this.configureLocalCameraHeaderExtensions();
 
-      if (this.encodedTransformWorkerManager?.isEnabled()) {
+      if (this.canUseEncodedTransforms()) {
         this.encodedTransformWorkerManager.setupVideoSenderTransform(
           this._localCameraTransceiver.sender
         );
@@ -291,7 +294,7 @@ export default class DefaultTransceiverController implements TransceiverControll
       this.logger.info(`audio transceiver direction is not set up or not activated`);
       return false;
     }
-    await this._localAudioTransceiver.sender.replaceTrack(track);
+    await this.peer.replaceTrack(this._localAudioTransceiver.sender, track);
     return true;
   }
 
@@ -491,40 +494,10 @@ export default class DefaultTransceiverController implements TransceiverControll
 
   getMidForStreamId(streamId: number): string | undefined {
     const transceiver = this.streamIdToTransceiver.get(streamId);
-    if (!transceiver) {
-      return undefined;
+    if (!transceiver || !this.peer) {
+      return transceiver?.mid;
     }
-    if (transceiver.mid) {
-      return transceiver.mid;
-    }
-    // A redirecting platform may bind `mid` asynchronously, so it can still be
-    // unset after setLocalDescription. Derive it from the local description.
-    const derived = this.deriveMid(transceiver);
-    this.logger.warn(`transceiver for stream ${streamId} has no mid; derived ${derived}`);
-    return derived;
-  }
-
-  // Transceivers that report a mid claim their SDP sections. The remaining SDP
-  // mids, in order, pair with the mid-less transceivers, in order. Not by array
-  // index: a platform may omit inactive transceivers from getTransceivers().
-  private deriveMid(transceiver: RTCRtpTransceiver): string | undefined {
-    const sdp = this.peer?.localDescription?.sdp;
-    if (!sdp) {
-      return undefined;
-    }
-    const transceivers = this.peer.getTransceivers();
-    const claimed = new Set(transceivers.map(t => t.mid).filter(mid => !!mid));
-    const unclaimed = new SDP(sdp)
-      .mediaSections()
-      .map(section => section.mid)
-      .filter(mid => !!mid && !claimed.has(mid));
-    const midless = transceivers.filter(t => !t.mid);
-    const index = midless.indexOf(transceiver);
-    if (index >= 0) {
-      return unclaimed[index];
-    }
-    // Proxy objects may not keep a stable identity across getTransceivers().
-    return unclaimed.length === 1 ? unclaimed[0] : undefined;
+    return this.peer.midOf(transceiver);
   }
 
   setStreamIdForMid(mid: string, newStreamId: number): void {
@@ -578,13 +551,7 @@ export default class DefaultTransceiverController implements TransceiverControll
       transceiver.direction = 'inactive';
     }
 
-    // Skip the no-op replaceTrack(null) on an empty sender; some redirecting
-    // platforms reject a null track.
-    if (!track && !transceiver.sender.track) {
-      return;
-    }
-
-    await transceiver.sender.replaceTrack(track);
+    await this.peer.replaceTrack(transceiver.sender, track);
   }
 
   /**

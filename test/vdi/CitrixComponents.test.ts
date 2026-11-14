@@ -29,10 +29,100 @@ describe('Citrix VDI components', () => {
     domMockBuilder.cleanup();
   });
 
-  it('CitrixPeerConnection wraps a redirected peer connection', () => {
-    expect(new CitrixPeerConnection({}, adapter).rtcPeerConnection).to.be.instanceOf(
-      FakePeerConnection
-    );
+  describe('CitrixPeerConnection', () => {
+    const sdp = [
+      'v=0',
+      'm=audio 9 UDP/TLS/RTP/SAVPF 111',
+      'a=mid:0',
+      'm=video 9 UDP/TLS/RTP/SAVPF 96',
+      'a=mid:1',
+      'm=video 9 UDP/TLS/RTP/SAVPF 96',
+      'a=mid:2',
+      '',
+    ].join('\r\n');
+
+    type FakeTransceiver = { mid: string | null };
+
+    // A redirected connection with the given transceivers and local description.
+    function peerWith(
+      transceivers: FakeTransceiver[],
+      localSdp: string | null = sdp
+    ): CitrixPeerConnection {
+      ucsdk.CitrixPeerConnection = class {
+        localDescription = localSdp === null ? null : { sdp: localSdp };
+        getTransceivers(): FakeTransceiver[] {
+          return transceivers;
+        }
+      } as unknown as CitrixUCSDK['CitrixPeerConnection'];
+      return new CitrixPeerConnection({}, adapter);
+    }
+
+    function midOf(peer: CitrixPeerConnection, transceiver: FakeTransceiver): string | null {
+      return peer.midOf(transceiver as RTCRtpTransceiver);
+    }
+
+    it('wraps a redirected peer connection', () => {
+      expect(new CitrixPeerConnection({}, adapter).rtcPeerConnection).to.be.instanceOf(
+        FakePeerConnection
+      );
+    });
+
+    it('cannot carry encoded transforms', () => {
+      expect(new CitrixPeerConnection({}, adapter).supportsEncodedTransforms).to.be.false;
+    });
+
+    it('returns the mid a transceiver reports', () => {
+      const transceiver = { mid: '1' };
+      expect(midOf(peerWith([transceiver]), transceiver)).to.equal('1');
+    });
+
+    it('pairs unclaimed SDP mids with mid-less transceivers in order', () => {
+      const first = { mid: null as string | null };
+      const second = { mid: null as string | null };
+      const peer = peerWith([{ mid: '0' }, first, second]);
+      expect(midOf(peer, first)).to.equal('1');
+      expect(midOf(peer, second)).to.equal('2');
+    });
+
+    it('skips SDP mids already claimed by another transceiver', () => {
+      const midless = { mid: null as string | null };
+      expect(midOf(peerWith([{ mid: '1' }, midless]), midless)).to.equal('0');
+    });
+
+    it('uses the only unclaimed mid when the transceiver identity is not stable', () => {
+      expect(midOf(peerWith([{ mid: '0' }, { mid: '1' }]), { mid: null })).to.equal('2');
+    });
+
+    it('returns null when the transceiver cannot be matched', () => {
+      expect(midOf(peerWith([{ mid: '0' }]), { mid: null })).to.equal(null);
+    });
+
+    it('returns null when more mid-less transceivers than unclaimed mids', () => {
+      const third = { mid: null as string | null };
+      const peer = peerWith([{ mid: '0' }, { mid: null }, { mid: null }, third]);
+      expect(midOf(peer, third)).to.equal(null);
+    });
+
+    it('returns null when there is no local description', () => {
+      const midless = { mid: null as string | null };
+      expect(midOf(peerWith([midless], null), midless)).to.equal(null);
+    });
+
+    it('skips replacing an empty sender with no track', async () => {
+      const sender = { track: null as MediaStreamTrack | null, replaceTrack: sinon.stub() };
+      const peer = new CitrixPeerConnection({}, adapter);
+      await peer.replaceTrack(sender as unknown as RTCRtpSender, null);
+      expect(sender.replaceTrack.called).to.be.false;
+    });
+
+    it('replaces the track otherwise', async () => {
+      const track = new MediaStreamTrack();
+      const sender = { track, replaceTrack: sinon.stub().resolves() };
+      const peer = new CitrixPeerConnection({}, adapter);
+      await peer.replaceTrack(sender as unknown as RTCRtpSender, null);
+      await peer.replaceTrack(sender as unknown as RTCRtpSender, track);
+      expect(sender.replaceTrack.args).to.deep.equal([[null], [track]]);
+    });
   });
 
   describe('CitrixMediaDeviceProvider', () => {
@@ -137,9 +227,9 @@ describe('Citrix VDI components', () => {
 
   it('works without a logger', async () => {
     const quiet = new CitrixVDIAdapter({ ucsdk, windowHandle: '0x1f' });
-    expect(new CitrixPeerConnection({}, quiet).rtcPeerConnection).to.be.instanceOf(
-      FakePeerConnection
-    );
+    const quietPeer = new CitrixPeerConnection({}, quiet);
+    expect(quietPeer.rtcPeerConnection).to.be.instanceOf(FakePeerConnection);
+    expect(quietPeer.midOf({ mid: null } as RTCRtpTransceiver)).to.equal(null);
     const devices = new CitrixMediaDeviceProvider(quiet);
     await devices.getUserMedia({ video: true });
     expect(await devices.createSilentAudioStream()).to.not.be.null;

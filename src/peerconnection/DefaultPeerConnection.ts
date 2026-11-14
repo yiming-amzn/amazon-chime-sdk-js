@@ -5,6 +5,8 @@ import PeerConnection from './PeerConnection';
 
 /** Forwards every call to the wrapped `RTCPeerConnection`. */
 export default class DefaultPeerConnection implements PeerConnection {
+  readonly supportsEncodedTransforms: boolean = true;
+
   constructor(public readonly rtcPeerConnection: RTCPeerConnection) {}
 
   get localDescription(): RTCSessionDescription | null {
@@ -48,6 +50,14 @@ export default class DefaultPeerConnection implements PeerConnection {
 
   getReceivers(): RTCRtpReceiver[] {
     return this.rtcPeerConnection.getReceivers();
+  }
+
+  midOf(transceiver: RTCRtpTransceiver): string | null {
+    return transceiver.mid;
+  }
+
+  replaceTrack(sender: RTCRtpSender, track: MediaStreamTrack | null): Promise<void> {
+    return sender.replaceTrack(track);
   }
 
   createOffer(options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit> {
