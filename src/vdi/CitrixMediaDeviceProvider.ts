@@ -24,7 +24,9 @@ export default class CitrixMediaDeviceProvider implements MediaDeviceProvider {
       for (const track of stream.getAudioTracks()) {
         track.enabled = false;
       }
-      this.adapter.logger?.warn('CitrixVDIAdapter: using a muted endpoint microphone as silent audio');
+      this.adapter.logger?.warn(
+        'CitrixVDIAdapter: using a muted endpoint microphone as silent audio'
+      );
       return stream;
     } catch (e) {
       this.adapter.logger?.warn(

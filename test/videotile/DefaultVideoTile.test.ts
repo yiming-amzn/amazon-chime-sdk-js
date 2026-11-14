@@ -8,8 +8,8 @@ import AudioVideoController from '../../src/audiovideocontroller/AudioVideoContr
 import NoOpAudioVideoController from '../../src/audiovideocontroller/NoOpAudioVideoController';
 import DevicePixelRatioMonitor from '../../src/devicepixelratiomonitor/DevicePixelRatioMonitor';
 import DevicePixelRatioObserver from '../../src/devicepixelratioobserver/DevicePixelRatioObserver';
-import TimeoutScheduler from '../../src/scheduler/TimeoutScheduler';
 import DefaultMediaElementBinder from '../../src/mediaelementbinder/DefaultMediaElementBinder';
+import TimeoutScheduler from '../../src/scheduler/TimeoutScheduler';
 import NoOpVideoElementFactory from '../../src/videoelementfactory/NoOpVideoElementFactory';
 import DefaultVideoTile from '../../src/videotile/DefaultVideoTile';
 import VideoTileController from '../../src/videotilecontroller/VideoTileController';

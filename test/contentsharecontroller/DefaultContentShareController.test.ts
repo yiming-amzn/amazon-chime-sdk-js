@@ -24,8 +24,8 @@ import { Maybe } from '../../src/utils/Types';
 import DefaultSimulcastUplinkPolicyForContentShare from '../../src/videouplinkbandwidthpolicy/DefaultSimulcastUplinkPolicyForContentShare';
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder, { StoppableMediaStreamTrack } from '../dommock/DOMMockBuilder';
-import { makeCitrixAdapter } from '../vdi/FakeCitrixUCSDK';
 import { createFakeTimers } from '../utils/fakeTimerHelper';
+import { makeCitrixAdapter } from '../vdi/FakeCitrixUCSDK';
 
 describe('DefaultContentShareController', () => {
   const expect: Chai.ExpectStatic = chai.expect;

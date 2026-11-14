@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added `VDIAdapter`, which lets a meeting run its media on a virtual desktop's endpoint instead of in the browser. Supply one through `MeetingSessionConfiguration.vdiAdapter` and the `vdiAdapter` option of `DefaultDeviceController`; without one the SDK uses the browser as before. The SDK builds its peer connection, device access and video and audio element registration from `PeerConnectionFactory`, `MediaDeviceProvider` and `MediaElementBinder`, created for the adapter by `VDIComponents`. See the VDI guide.
+- Added `VDIAdapter`, which lets a meeting run its media on a virtual desktop's endpoint instead of in the browser. Supply one through `MeetingSessionConfiguration.vdiAdapter` and the `vdiAdapter` option of `DefaultDeviceController`; without one the SDK uses the browser as before. The SDK builds its peer connection, device access and video and audio element registration from `PeerConnection`, `MediaDeviceProvider` and `MediaElementBinder`, created for the adapter by `VDIComponents`. See the VDI guide.
 - Added `CitrixVDIAdapter` for Citrix HDX media redirection, with the Citrix peer connection, device and element components. The application passes in an initialized Citrix UCSDK object and the window handle from the Citrix Bootstrap, or calls `CitrixVDIAdapter.connect` to initialize them; the SDK does not include the UCSDK. Content share stays in the browser.
 
 ### Removed

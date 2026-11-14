@@ -18,7 +18,7 @@ The SDK builds media from three components. `VDIComponents` creates each one for
 
 | Component | Browser | Citrix |
 |---|---|---|
-| `PeerConnectionFactory` creates the meeting's peer connection | `DefaultPeerConnectionFactory` | `CitrixPeerConnectionFactory` |
+| `PeerConnection` is the meeting's peer connection, as the SDK uses it | `DefaultPeerConnection` | `CitrixPeerConnection` |
 | `MediaDeviceProvider` opens the camera and microphone, lists devices and supplies the silent audio stream used when no microphone is selected | `DefaultMediaDeviceProvider` | `CitrixMediaDeviceProvider` |
 | `MediaElementBinder` registers video tiles, the local preview and the meeting audio element with the platform that renders them | `DefaultMediaElementBinder` | `CitrixMediaElementBinder` |
 

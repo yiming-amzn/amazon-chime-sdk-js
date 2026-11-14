@@ -6,10 +6,10 @@ import * as sinon from 'sinon';
 
 import DefaultMediaDeviceProvider from '../../src/mediadeviceprovider/DefaultMediaDeviceProvider';
 import DefaultMediaElementBinder from '../../src/mediaelementbinder/DefaultMediaElementBinder';
-import DefaultPeerConnectionFactory from '../../src/peerconnectionfactory/DefaultPeerConnectionFactory';
+import DefaultPeerConnection from '../../src/peerconnection/DefaultPeerConnection';
 import CitrixMediaDeviceProvider from '../../src/vdi/CitrixMediaDeviceProvider';
 import CitrixMediaElementBinder from '../../src/vdi/CitrixMediaElementBinder';
-import CitrixPeerConnectionFactory from '../../src/vdi/CitrixPeerConnectionFactory';
+import CitrixPeerConnection from '../../src/vdi/CitrixPeerConnection';
 import VDIAdapter from '../../src/vdi/VDIAdapter';
 import VDIComponents from '../../src/vdi/VDIComponents';
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
@@ -29,32 +29,30 @@ describe('VDIComponents', () => {
   });
 
   it('creates the browser components without an adapter', () => {
-    expect(VDIComponents.peerConnectionFactory()).to.be.instanceOf(DefaultPeerConnectionFactory);
+    expect(VDIComponents.peerConnection({})).to.be.instanceOf(DefaultPeerConnection);
     expect(VDIComponents.mediaDeviceProvider()).to.be.instanceOf(DefaultMediaDeviceProvider);
     expect(VDIComponents.mediaElementBinder()).to.be.instanceOf(DefaultMediaElementBinder);
   });
 
   it('creates the Citrix components for a Citrix adapter', () => {
     const adapter = makeCitrixAdapter();
-    expect(VDIComponents.peerConnectionFactory(adapter)).to.be.instanceOf(
-      CitrixPeerConnectionFactory
-    );
+    expect(VDIComponents.peerConnection({}, adapter)).to.be.instanceOf(CitrixPeerConnection);
     expect(VDIComponents.mediaDeviceProvider(adapter)).to.be.instanceOf(CitrixMediaDeviceProvider);
     expect(VDIComponents.mediaElementBinder(adapter)).to.be.instanceOf(CitrixMediaElementBinder);
   });
 
   it('creates the browser components for an adapter it does not know', () => {
     const adapter: VDIAdapter = { name: 'Other' };
-    expect(VDIComponents.peerConnectionFactory(adapter)).to.be.instanceOf(
-      DefaultPeerConnectionFactory
-    );
+    expect(VDIComponents.peerConnection({}, adapter)).to.be.instanceOf(DefaultPeerConnection);
     expect(VDIComponents.mediaDeviceProvider(adapter)).to.be.instanceOf(DefaultMediaDeviceProvider);
     expect(VDIComponents.mediaElementBinder(adapter)).to.be.instanceOf(DefaultMediaElementBinder);
   });
 
   describe('browser components', () => {
-    it('create a native peer connection', () => {
-      expect(new DefaultPeerConnectionFactory().create({})).to.be.instanceOf(RTCPeerConnection);
+    it('wrap a native peer connection', () => {
+      expect(VDIComponents.peerConnection({}).rtcPeerConnection).to.be.instanceOf(
+        RTCPeerConnection
+      );
     });
 
     it('call the browser getUserMedia and enumerateDevices', async () => {

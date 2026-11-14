@@ -5,21 +5,22 @@ import DefaultMediaDeviceProvider from '../mediadeviceprovider/DefaultMediaDevic
 import MediaDeviceProvider from '../mediadeviceprovider/MediaDeviceProvider';
 import DefaultMediaElementBinder from '../mediaelementbinder/DefaultMediaElementBinder';
 import MediaElementBinder from '../mediaelementbinder/MediaElementBinder';
-import DefaultPeerConnectionFactory from '../peerconnectionfactory/DefaultPeerConnectionFactory';
-import PeerConnectionFactory from '../peerconnectionfactory/PeerConnectionFactory';
+import DefaultPeerConnection from '../peerconnection/DefaultPeerConnection';
+import PeerConnection from '../peerconnection/PeerConnection';
 import CitrixMediaDeviceProvider from './CitrixMediaDeviceProvider';
 import CitrixMediaElementBinder from './CitrixMediaElementBinder';
-import CitrixPeerConnectionFactory from './CitrixPeerConnectionFactory';
+import CitrixPeerConnection from './CitrixPeerConnection';
 import CitrixVDIAdapter from './CitrixVDIAdapter';
 import VDIAdapter from './VDIAdapter';
 
 /** Creates each media component for a VDI adapter, or the browser one without an adapter. */
 export default class VDIComponents {
-  static peerConnectionFactory(adapter?: VDIAdapter): PeerConnectionFactory {
+  static peerConnection(configuration: RTCConfiguration, adapter?: VDIAdapter): PeerConnection {
     if (adapter instanceof CitrixVDIAdapter) {
-      return new CitrixPeerConnectionFactory(adapter);
+      return new CitrixPeerConnection(configuration, adapter);
     }
-    return new DefaultPeerConnectionFactory();
+    // @ts-ignore
+    return new DefaultPeerConnection(new RTCPeerConnection(configuration));
   }
 
   static mediaDeviceProvider(adapter?: VDIAdapter): MediaDeviceProvider {

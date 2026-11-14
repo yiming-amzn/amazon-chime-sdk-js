@@ -101,9 +101,10 @@ export default class CreatePeerConnectionTask extends BaseTask implements Remova
       this.context.logger.info('reusing peer connection');
     } else {
       this.context.logger.info('creating new peer connection');
-      this.context.peer = VDIComponents.peerConnectionFactory(
+      this.context.peer = VDIComponents.peerConnection(
+        configuration,
         this.context.meetingSessionConfiguration?.vdiAdapter
-      ).create(configuration);
+      );
       this.addPeerConnectionEventLogger();
     }
 

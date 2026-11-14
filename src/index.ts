@@ -59,7 +59,7 @@ import CheckVideoConnectivityFeedback from './meetingreadinesschecker/CheckVideo
 import CheckVideoInputFeedback from './meetingreadinesschecker/CheckVideoInputFeedback';
 import CitrixMediaDeviceProvider from './vdi/CitrixMediaDeviceProvider';
 import CitrixMediaElementBinder from './vdi/CitrixMediaElementBinder';
-import CitrixPeerConnectionFactory from './vdi/CitrixPeerConnectionFactory';
+import CitrixPeerConnection from './vdi/CitrixPeerConnection';
 import CitrixVDIAdapter from './vdi/CitrixVDIAdapter';
 import CleanRestartedSessionTask from './task/CleanRestartedSessionTask';
 import CleanStoppedSessionTask from './task/CleanStoppedSessionTask';
@@ -101,7 +101,7 @@ import DefaultMeetingReadinessChecker from './meetingreadinesschecker/DefaultMee
 import DefaultMeetingSession from './meetingsession/DefaultMeetingSession';
 import DefaultMessagingSession from './messagingsession/DefaultMessagingSession';
 import DefaultModality from './modality/DefaultModality';
-import DefaultPeerConnectionFactory from './peerconnectionfactory/DefaultPeerConnectionFactory';
+import DefaultPeerConnection from './peerconnection/DefaultPeerConnection';
 import DefaultPingPong from './pingpong/DefaultPingPong';
 import DefaultRealtimeController from './realtimecontroller/DefaultRealtimeController';
 import DefaultReconnectController from './reconnectcontroller/DefaultReconnectController';
@@ -222,7 +222,7 @@ import OverconstrainedError from './devicecontroller/OverconstrainedError';
 import POSTLogger from './logger/POSTLogger';
 import POSTLoggerOptions from './logger/POSTLoggerOptions';
 import ParallelGroupTask from './task/ParallelGroupTask';
-import PeerConnectionFactory from './peerconnectionfactory/PeerConnectionFactory';
+import PeerConnection from './peerconnection/PeerConnection';
 import PermissionDeniedError from './devicecontroller/PermissionDeniedError';
 import PingPong from './pingpong/PingPong';
 import PingPongObserver from './pingpongobserver/PingPongObserver';
@@ -450,7 +450,7 @@ export {
   CheckVideoInputFeedback,
   CitrixMediaDeviceProvider,
   CitrixMediaElementBinder,
-  CitrixPeerConnectionFactory,
+  CitrixPeerConnection,
   CitrixVDIAdapter,
   CleanRestartedSessionTask,
   CleanStoppedSessionTask,
@@ -492,7 +492,7 @@ export {
   DefaultMeetingSession,
   DefaultMessagingSession,
   DefaultModality,
-  DefaultPeerConnectionFactory,
+  DefaultPeerConnection,
   DefaultPingPong,
   DefaultRealtimeController,
   DefaultReconnectController,
@@ -626,7 +626,7 @@ export {
   POSTLoggerOptions,
   ParallelGroupTask,
   PartialOrd,
-  PeerConnectionFactory,
+  PeerConnection,
   PermissionDeniedError,
   PingPong,
   PingPongObserver,

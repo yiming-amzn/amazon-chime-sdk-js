@@ -10,6 +10,7 @@ import DefaultBrowserBehavior from '../../src/browserbehavior/DefaultBrowserBeha
 import DefaultEncodedTransformWorkerManager from '../../src/encodedtransformmanager/DefaultEncodedTransformWorkerManager';
 import LogLevel from '../../src/logger/LogLevel';
 import NoOpLogger from '../../src/logger/NoOpLogger';
+import DefaultPeerConnection from '../../src/peerconnection/DefaultPeerConnection';
 import TimeoutScheduler from '../../src/scheduler/TimeoutScheduler';
 import {
   SdkIndexFrame,
@@ -62,7 +63,7 @@ describe('DefaultTransceiverController', () => {
       expect(tc.useTransceivers()).to.equal(false);
 
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       expect(tc.useTransceivers()).to.equal(true);
 
       tc.reset();
@@ -80,7 +81,7 @@ describe('DefaultTransceiverController', () => {
     it('can set up transceivers without the meeting session context', () => {
       tc = new DefaultTransceiverController(logger, context.browserBehavior);
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
       expect(peer.getTransceivers().length).to.equal(2);
 
@@ -106,7 +107,7 @@ describe('DefaultTransceiverController', () => {
       tc = new DefaultTransceiverController(logger, context.browserBehavior, context);
 
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
 
       expect(peer.getTransceivers().length).to.equal(0);
       tc.setupLocalTransceivers();
@@ -115,7 +116,7 @@ describe('DefaultTransceiverController', () => {
 
     it('can set up transceivers once', () => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       expect(peer.getTransceivers().length).to.equal(0);
       tc.setupLocalTransceivers();
 
@@ -143,14 +144,14 @@ describe('DefaultTransceiverController', () => {
   describe('hasVideoInput', () => {
     it('return false if video input doesnt exist', () => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
       expect(tc.hasVideoInput()).to.equal(false);
     });
 
     it('return true if video input exists', done => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
       const newVideoTrack = new MediaStreamTrack();
       tc.setVideoInput(newVideoTrack);
@@ -165,7 +166,7 @@ describe('DefaultTransceiverController', () => {
   describe('trackIsVideoInput', () => {
     it('can check whether the given track is a video input', () => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
 
       const audioTrack = peer.getTransceivers()[0].receiver.track;
@@ -177,7 +178,7 @@ describe('DefaultTransceiverController', () => {
 
     it('can not check if it has reset transceivers', () => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
 
       const videoTrack = peer.getTransceivers()[1].receiver.track;
@@ -190,7 +191,7 @@ describe('DefaultTransceiverController', () => {
   describe('setAudioInput', () => {
     it('can set the audio track to null', done => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
       tc.setAudioInput(null);
 
@@ -203,7 +204,7 @@ describe('DefaultTransceiverController', () => {
 
     it('can set the audio track', done => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
 
       const newAudioTrack = new MediaStreamTrack();
@@ -219,7 +220,7 @@ describe('DefaultTransceiverController', () => {
 
     it('can not set the audio track if transceivers have not been set up', done => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
 
       const newAudioTrack = new MediaStreamTrack();
       tc.setAudioInput(newAudioTrack);
@@ -235,7 +236,7 @@ describe('DefaultTransceiverController', () => {
   describe('setVideoInput', () => {
     it('can set the video track to null', done => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
       tc.setVideoInput(null);
 
@@ -248,7 +249,7 @@ describe('DefaultTransceiverController', () => {
 
     it('can set the video track', done => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
 
       const newVideoTrack = new MediaStreamTrack();
@@ -264,7 +265,7 @@ describe('DefaultTransceiverController', () => {
 
     it('can not set the video track if transceivers have not been set up', done => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
 
       const newVideoTrack = new MediaStreamTrack();
       tc.setVideoInput(newVideoTrack);
@@ -344,7 +345,7 @@ describe('DefaultTransceiverController', () => {
 
     beforeEach(() => {
       peer = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
     });
 
     it('cannot update video transceivers if it has reset transceivers', () => {
@@ -770,7 +771,7 @@ describe('DefaultTransceiverController', () => {
 
     it('will not set bitrate if input is not positive', async () => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
 
       const newVideoTrack = new MediaStreamTrack();
@@ -796,7 +797,7 @@ describe('DefaultTransceiverController', () => {
 
     it('sets bitrate on RTCRtpSender correctly', async () => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
 
       const newVideoTrack = new MediaStreamTrack();
@@ -830,7 +831,7 @@ describe('DefaultTransceiverController', () => {
       // set up local transceivers
       success = true;
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
       success = await tc.replaceAudioTrack(newAudioTrack);
       expect(success).to.be.false;
@@ -852,7 +853,7 @@ describe('DefaultTransceiverController', () => {
     let peer: RTCPeerConnection;
     beforeEach(() => {
       peer = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
       tc.setupLocalTransceivers();
       getParamSpy = sinon.spy(peer.getTransceivers()[1].sender, 'getParameters');
       setParamSpy = sinon.spy(peer.getTransceivers()[1].sender, 'setParameters');
@@ -1126,7 +1127,7 @@ describe('DefaultTransceiverController', () => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
       const addEventListenerSpy = sinon.spy(peer, 'addEventListener');
 
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
 
       expect(addEventListenerSpy.calledWith('track')).to.be.true;
       addEventListenerSpy.restore();
@@ -1134,7 +1135,7 @@ describe('DefaultTransceiverController', () => {
 
     it('removes track event listener when reset is called', () => {
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tc.setPeer(peer);
+      tc.setPeer(new DefaultPeerConnection(peer));
 
       const removeEventListenerSpy = sinon.spy(peer, 'removeEventListener');
       tc.reset();
@@ -1167,7 +1168,7 @@ describe('DefaultTransceiverController', () => {
       );
 
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tcWithManager.setPeer(peer);
+      tcWithManager.setPeer(new DefaultPeerConnection(peer));
       tcWithManager.setupLocalTransceivers();
 
       expect(mockEncodedTransformWorkerManager.setupAudioSenderTransform.calledOnce).to.be.true;
@@ -1192,7 +1193,7 @@ describe('DefaultTransceiverController', () => {
       );
 
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tcWithManager.setPeer(peer);
+      tcWithManager.setPeer(new DefaultPeerConnection(peer));
       tcWithManager.setupLocalTransceivers();
 
       expect(mockEncodedTransformWorkerManager.setupVideoSenderTransform.calledOnce).to.be.true;
@@ -1216,7 +1217,7 @@ describe('DefaultTransceiverController', () => {
       );
 
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tcWithManager.setPeer(peer);
+      tcWithManager.setPeer(new DefaultPeerConnection(peer));
       tcWithManager.setupLocalTransceivers();
 
       expect(mockEncodedTransformWorkerManager.setupAudioSenderTransform.called).to.be.false;
@@ -1241,7 +1242,7 @@ describe('DefaultTransceiverController', () => {
       );
 
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tcWithManager.setPeer(peer);
+      tcWithManager.setPeer(new DefaultPeerConnection(peer));
       tcWithManager.setupLocalTransceivers();
 
       // Simulate a track event with a video track
@@ -1283,7 +1284,7 @@ describe('DefaultTransceiverController', () => {
         legacyManager
       );
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tcWithManager.setPeer(peer);
+      tcWithManager.setPeer(new DefaultPeerConnection(peer));
       tcWithManager.setupLocalTransceivers();
 
       const videoTrack = new MediaStreamTrack();
@@ -1325,7 +1326,7 @@ describe('DefaultTransceiverController', () => {
       );
 
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tcWithManager.setPeer(peer);
+      tcWithManager.setPeer(new DefaultPeerConnection(peer));
       tcWithManager.setupLocalTransceivers();
 
       // Reset the stub to clear calls from setupLocalTransceivers
@@ -1372,7 +1373,7 @@ describe('DefaultTransceiverController', () => {
       );
 
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tcWithManager.setPeer(peer);
+      tcWithManager.setPeer(new DefaultPeerConnection(peer));
       tcWithManager.setupLocalTransceivers();
 
       // Reset the stub to clear calls from setupLocalTransceivers
@@ -1409,7 +1410,7 @@ describe('DefaultTransceiverController', () => {
       );
 
       const peer: RTCPeerConnection = new RTCPeerConnection();
-      tcWithoutManager.setPeer(peer);
+      tcWithoutManager.setPeer(new DefaultPeerConnection(peer));
       tcWithoutManager.setupLocalTransceivers();
 
       // Simulate a track event with a video track and no transform set
@@ -1481,19 +1482,22 @@ describe('DefaultTransceiverController', () => {
     it('returns false when getTransceivers is not available', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const peer = {} as any;
-      expect(DefaultTransceiverController.canUseHeaderExtensionApi(peer)).to.be.false;
+      expect(DefaultTransceiverController.canUseHeaderExtensionApi(new DefaultPeerConnection(peer)))
+        .to.be.false;
     });
 
     it('returns false when peer has no transceivers', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const peer = { getTransceivers: (): RTCRtpTransceiver[] => [] } as any;
-      expect(DefaultTransceiverController.canUseHeaderExtensionApi(peer)).to.be.false;
+      expect(DefaultTransceiverController.canUseHeaderExtensionApi(new DefaultPeerConnection(peer)))
+        .to.be.false;
     });
 
     it('returns false when transceiver lacks the API', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const peer = { getTransceivers: (): { mid: string }[] => [{ mid: '0' }] } as any;
-      expect(DefaultTransceiverController.canUseHeaderExtensionApi(peer)).to.be.false;
+      expect(DefaultTransceiverController.canUseHeaderExtensionApi(new DefaultPeerConnection(peer)))
+        .to.be.false;
     });
 
     it('returns false when transceiver only has getter', () => {
@@ -1504,7 +1508,8 @@ describe('DefaultTransceiverController', () => {
         ],
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
-      expect(DefaultTransceiverController.canUseHeaderExtensionApi(peer)).to.be.false;
+      expect(DefaultTransceiverController.canUseHeaderExtensionApi(new DefaultPeerConnection(peer)))
+        .to.be.false;
     });
 
     it('returns true when transceiver has both getter and setter', () => {
@@ -1518,7 +1523,8 @@ describe('DefaultTransceiverController', () => {
         ],
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
-      expect(DefaultTransceiverController.canUseHeaderExtensionApi(peer)).to.be.true;
+      expect(DefaultTransceiverController.canUseHeaderExtensionApi(new DefaultPeerConnection(peer)))
+        .to.be.true;
     });
   });
 
@@ -1531,7 +1537,7 @@ describe('DefaultTransceiverController', () => {
       domMockBehavior.supportsHeaderExtensionApi = true;
       domMockBuilder = new DOMMockBuilder(domMockBehavior);
       const localTc = new DefaultTransceiverController(logger, new DefaultBrowserBehavior());
-      localTc.setPeer(new RTCPeerConnection());
+      localTc.setPeer(new DefaultPeerConnection(new RTCPeerConnection()));
       localTc.setupLocalTransceivers();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1555,7 +1561,7 @@ describe('DefaultTransceiverController', () => {
         localContext.browserBehavior,
         localContext
       );
-      localTc.setPeer(new RTCPeerConnection());
+      localTc.setPeer(new DefaultPeerConnection(new RTCPeerConnection()));
       localTc.setupLocalTransceivers();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1572,7 +1578,7 @@ describe('DefaultTransceiverController', () => {
       domMockBehavior.supportsHeaderExtensionApi = true;
       domMockBuilder = new DOMMockBuilder(domMockBehavior);
       tc = new DefaultTransceiverController(logger, new DefaultBrowserBehavior(), context);
-      tc.setPeer(new RTCPeerConnection());
+      tc.setPeer(new DefaultPeerConnection(new RTCPeerConnection()));
       tc.setupLocalTransceivers();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1591,7 +1597,7 @@ describe('DefaultTransceiverController', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
       tc = new DefaultTransceiverController(logger, new DefaultBrowserBehavior(), context);
-      tc.setPeer(new RTCPeerConnection());
+      tc.setPeer(new DefaultPeerConnection(new RTCPeerConnection()));
       tc.setupLocalTransceivers();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1604,7 +1610,7 @@ describe('DefaultTransceiverController', () => {
       domMockBehavior.supportsHeaderExtensionApi = true;
       domMockBuilder = new DOMMockBuilder(domMockBehavior);
       tc = new DefaultTransceiverController(logger, new DefaultBrowserBehavior(), context);
-      tc.setPeer(new RTCPeerConnection());
+      tc.setPeer(new DefaultPeerConnection(new RTCPeerConnection()));
 
       const origAddTransceiver = RTCPeerConnection.prototype.addTransceiver;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1640,7 +1646,7 @@ describe('DefaultTransceiverController', () => {
       domMockBuilder = new DOMMockBuilder(domMockBehavior);
       const controller = new DefaultTransceiverController(logger, new DefaultBrowserBehavior());
       const peer = new RTCPeerConnection();
-      controller.setPeer(peer);
+      controller.setPeer(new DefaultPeerConnection(peer));
       controller.setupLocalTransceivers();
       const index = new DefaultVideoStreamIndex(logger);
       index.integrateIndexFrame(

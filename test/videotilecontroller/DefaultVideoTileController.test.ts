@@ -19,8 +19,8 @@ import VideoTileController, {
 import DefaultVideoTileFactory from '../../src/videotilefactory/DefaultVideoTileFactory';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
 import MockMediaElementBinder from '../mediaelementbinder/MockMediaElementBinder';
-import { makeCitrixAdapter } from '../vdi/FakeCitrixUCSDK';
 import { createFakeTimers } from '../utils/fakeTimerHelper';
+import { makeCitrixAdapter } from '../vdi/FakeCitrixUCSDK';
 
 describe('DefaultVideoTileController', () => {
   const assert: Chai.AssertStatic = chai.assert;

@@ -35,7 +35,6 @@ import DOMMockBuilder, {
 } from '../dommock/DOMMockBuilder';
 import MockError from '../dommock/MockError';
 import UserMediaState from '../dommock/UserMediaState';
-import { makeCitrixAdapter, makeUcsdk } from '../vdi/FakeCitrixUCSDK';
 import {
   MockNodeTransformDevice,
   MockPassthroughTransformDevice,
@@ -43,6 +42,7 @@ import {
   MutingTransformDevice,
 } from '../transformdevicemock/MockTransformDevice';
 import { tick } from '../utils/fakeTimerHelper';
+import { makeCitrixAdapter, makeUcsdk } from '../vdi/FakeCitrixUCSDK';
 
 // Create fake timers with Date to ensure consistent timing
 function createFakeTimersWithDate(): sinon.SinonFakeTimers {
@@ -3012,9 +3012,8 @@ describe('DefaultDeviceController', () => {
         vdiAdapter: adapterWith([getMediaDeviceInfo('endpoint-mic', 'audioinput', '', 'group')]),
       });
       await deviceController.listAudioInputDevices();
-      expect(
-        (ucsdk.getUserMedia as sinon.SinonStub).calledOnceWith({ audio: true, video: true })
-      ).to.be.true;
+      expect((ucsdk.getUserMedia as sinon.SinonStub).calledOnceWith({ audio: true, video: true }))
+        .to.be.true;
       expect((ucsdk.enumerateDevices as sinon.SinonStub).calledTwice).to.be.true;
     });
 

@@ -7,7 +7,7 @@ import * as sinon from 'sinon';
 import NoOpLogger from '../../src/logger/NoOpLogger';
 import CitrixMediaDeviceProvider from '../../src/vdi/CitrixMediaDeviceProvider';
 import CitrixMediaElementBinder from '../../src/vdi/CitrixMediaElementBinder';
-import CitrixPeerConnectionFactory from '../../src/vdi/CitrixPeerConnectionFactory';
+import CitrixPeerConnection from '../../src/vdi/CitrixPeerConnection';
 import CitrixVDIAdapter, { CitrixUCSDK } from '../../src/vdi/CitrixVDIAdapter';
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
@@ -29,8 +29,8 @@ describe('Citrix VDI components', () => {
     domMockBuilder.cleanup();
   });
 
-  it('CitrixPeerConnectionFactory creates a redirected peer connection', () => {
-    expect(new CitrixPeerConnectionFactory(adapter).create({})).to.be.instanceOf(
+  it('CitrixPeerConnection wraps a redirected peer connection', () => {
+    expect(new CitrixPeerConnection({}, adapter).rtcPeerConnection).to.be.instanceOf(
       FakePeerConnection
     );
   });
@@ -137,7 +137,9 @@ describe('Citrix VDI components', () => {
 
   it('works without a logger', async () => {
     const quiet = new CitrixVDIAdapter({ ucsdk, windowHandle: '0x1f' });
-    expect(new CitrixPeerConnectionFactory(quiet).create({})).to.be.instanceOf(FakePeerConnection);
+    expect(new CitrixPeerConnection({}, quiet).rtcPeerConnection).to.be.instanceOf(
+      FakePeerConnection
+    );
     const devices = new CitrixMediaDeviceProvider(quiet);
     await devices.getUserMedia({ video: true });
     expect(await devices.createSilentAudioStream()).to.not.be.null;

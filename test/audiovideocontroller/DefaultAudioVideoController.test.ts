@@ -85,8 +85,8 @@ import DefaultWebSocketAdapter from '../../src/websocketadapter/DefaultWebSocket
 import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder from '../dommock/DOMMockBuilder';
 import ChromeSDPMock from '../sdp/ChromeSDPMock';
-import { citrixStream, makeCitrixAdapter } from '../vdi/FakeCitrixUCSDK';
 import { createFakeTimers, tick as tickHelper } from '../utils/fakeTimerHelper';
+import { citrixStream, makeCitrixAdapter } from '../vdi/FakeCitrixUCSDK';
 
 const defaultDelay = new DOMMockBehavior().asyncWaitMs * 5;
 
