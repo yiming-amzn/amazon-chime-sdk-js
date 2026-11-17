@@ -57,6 +57,8 @@ import CheckNetworkTCPConnectivityFeedback from './meetingreadinesschecker/Check
 import CheckNetworkUDPConnectivityFeedback from './meetingreadinesschecker/CheckNetworkUDPConnectivityFeedback';
 import CheckVideoConnectivityFeedback from './meetingreadinesschecker/CheckVideoConnectivityFeedback';
 import CheckVideoInputFeedback from './meetingreadinesschecker/CheckVideoInputFeedback';
+import CitrixMediaDevices from './vdi/CitrixMediaDevices';
+import CitrixVDIAdapter from './vdi/CitrixVDIAdapter';
 import CleanRestartedSessionTask from './task/CleanRestartedSessionTask';
 import CleanStoppedSessionTask from './task/CleanStoppedSessionTask';
 import ClientMetricReport from './clientmetricreport/ClientMetricReport';
@@ -162,6 +164,7 @@ import LogLevel from './logger/LogLevel';
 import Logger from './logger/Logger';
 import MediaDeviceFactory from './mediadevicefactory/MediaDeviceFactory';
 import MediaDeviceProxyHandler from './mediadevicefactory/MediaDeviceProxyHandler';
+import MediaDevices from './mediadevices/MediaDevices';
 import MediaMetricsEncodedTransformManager from './encodedtransformmanager/MediaMetricsEncodedTransformManager';
 import MediaStreamBroker from './mediastreambroker/MediaStreamBroker';
 import MediaStreamBrokerObserver from './mediastreambrokerobserver/MediaStreamBrokerObserver';
@@ -213,6 +216,7 @@ import OverconstrainedError from './devicecontroller/OverconstrainedError';
 import POSTLogger from './logger/POSTLogger';
 import POSTLoggerOptions from './logger/POSTLoggerOptions';
 import ParallelGroupTask from './task/ParallelGroupTask';
+import PeerConnection from './peerconnection/PeerConnection';
 import PermissionDeniedError from './devicecontroller/PermissionDeniedError';
 import PingPong from './pingpong/PingPong';
 import PingPongObserver from './pingpongobserver/PingPongObserver';
@@ -296,6 +300,7 @@ import TranscriptionStatusType from './transcript/TranscriptionStatusType';
 import TypeError from './devicecontroller/TypeError';
 import UnusableAudioWarningConnectionHealthPolicy from './connectionhealthpolicy/UnusableAudioWarningConnectionHealthPolicy';
 import UserAgentParser from './useragentparser/UserAgentParser';
+import VDIAdapter from './vdi/VDIAdapter';
 import Versioning from './versioning/Versioning';
 import VideoAdaptiveProbePolicy from './videodownlinkbandwidthpolicy/VideoAdaptiveProbePolicy';
 import VideoCaptureAndEncodeParameter from './videocaptureandencodeparameter/VideoCaptureAndEncodeParameter';
@@ -438,6 +443,8 @@ export {
   CheckNetworkUDPConnectivityFeedback,
   CheckVideoConnectivityFeedback,
   CheckVideoInputFeedback,
+  CitrixMediaDevices,
+  CitrixVDIAdapter,
   CleanRestartedSessionTask,
   CleanStoppedSessionTask,
   ClientMetricReport,
@@ -546,6 +553,7 @@ export {
   MaybeProvider,
   MediaDeviceFactory,
   MediaDeviceProxyHandler,
+  MediaDevices,
   MediaMetricsEncodedTransformManager,
   MediaStreamBroker,
   MediaStreamBrokerObserver,
@@ -607,6 +615,7 @@ export {
   POSTLoggerOptions,
   ParallelGroupTask,
   PartialOrd,
+  PeerConnection,
   PermissionDeniedError,
   PingPong,
   PingPongObserver,
@@ -692,6 +701,7 @@ export {
   TypeError,
   UnusableAudioWarningConnectionHealthPolicy,
   UserAgentParser,
+  VDIAdapter,
   Versioning,
   VideoAdaptiveProbePolicy,
   VideoCaptureAndEncodeParameter,

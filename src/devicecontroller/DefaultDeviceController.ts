@@ -8,12 +8,14 @@ import DeviceChangeObserver from '../devicechangeobserver/DeviceChangeObserver';
 import EventController from '../eventcontroller/EventController';
 import Logger from '../logger/Logger';
 import DefaultMediaDeviceFactory from '../mediadevicefactory/DefaultMediaDeviceFactory';
+import MediaDevices from '../mediadevices/MediaDevices';
 import DeviceControllerBasedMediaStreamBroker from '../mediastreambroker/DeviceControllerBasedMediaStreamBroker';
 import MediaStreamBrokerObserver from '../mediastreambrokerobserver/MediaStreamBrokerObserver';
 import AsyncScheduler from '../scheduler/AsyncScheduler';
 import StatsCollector from '../statscollector/StatsCollector';
 import PromiseQueue from '../utils/PromiseQueue';
 import { Maybe } from '../utils/Types';
+import VDIAdapter from '../vdi/VDIAdapter';
 import DefaultVideoTransformDevice from '../videoframeprocessor/DefaultVideoTransformDevice';
 import DefaultVideoTile from '../videotile/DefaultVideoTile';
 import AudioInputDevice from './AudioInputDevice';
@@ -62,12 +64,12 @@ export default class DefaultDeviceController
   private mediaStreamBrokerObservers: Set<MediaStreamBrokerObserver> =
     new Set<MediaStreamBrokerObserver>();
   private deviceLabelTrigger = (): Promise<MediaStream> => {
-    return navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    return this.mediaDevices.getUserMedia({ audio: true, video: true });
   };
   private audioInputDestinationNode: MediaStreamAudioDestinationNode | null = null;
   private audioInputSourceNode: MediaStreamAudioSourceNode | null = null;
 
-  private mediaDeviceWrapper: MediaDevices | undefined;
+  private mediaDeviceWrapper: typeof navigator.mediaDevices | undefined;
   private onDeviceChangeCallback?: Thunk;
 
   private videoInputQualitySettings: VideoQualitySettings = null;
@@ -94,14 +96,29 @@ export default class DefaultDeviceController
     }
   };
 
+  private vdiAdapter?: VDIAdapter;
+
+  private get mediaDevices(): Pick<globalThis.MediaDevices, 'getUserMedia' | 'enumerateDevices'> {
+    return MediaDevices.create(this.vdiAdapter);
+  }
+
   constructor(
     private logger: Logger,
-    options?: { enableWebAudio?: boolean; useMediaConstraintsFallback?: boolean },
+    options?: {
+      enableWebAudio?: boolean;
+      useMediaConstraintsFallback?: boolean;
+      vdiAdapter?: VDIAdapter;
+    },
     private browserBehavior: ExtendedBrowserBehavior = new DefaultBrowserBehavior(),
     public eventController?: EventController,
     private statsCollector?: StatsCollector
   ) {
-    const { enableWebAudio = false, useMediaConstraintsFallback = true } = options || {};
+    const {
+      enableWebAudio = false,
+      useMediaConstraintsFallback = true,
+      vdiAdapter,
+    } = options || {};
+    this.vdiAdapter = vdiAdapter;
     this.useWebAudio = enableWebAudio;
     this.useMediaConstraintsFallback = useMediaConstraintsFallback;
 
@@ -842,7 +859,7 @@ export default class DefaultDeviceController
       this.deviceInfoCache = [];
       return;
     }
-    let devices = await navigator.mediaDevices.enumerateDevices();
+    let devices = await this.mediaDevices.enumerateDevices();
     let hasDeviceLabels = true;
     for (const device of devices) {
       if (!device.label) {
@@ -854,7 +871,7 @@ export default class DefaultDeviceController
       try {
         this.logger.info('attempting to trigger media device labels since they are hidden');
         const triggerStream = await this.deviceLabelTrigger();
-        devices = await navigator.mediaDevices.enumerateDevices();
+        devices = await this.mediaDevices.enumerateDevices();
         for (const track of triggerStream.getTracks()) {
           track.stop();
         }
@@ -1145,7 +1162,7 @@ export default class DefaultDeviceController
         newDevice.stream = stream;
         newDevice.constraints = proposedConstraints;
       } else {
-        newDevice.stream = await navigator.mediaDevices.getUserMedia(proposedConstraints);
+        newDevice.stream = await this.mediaDevices.getUserMedia(proposedConstraints);
         newDevice.constraints = proposedConstraints;
       }
       await this.handleNewInputDevice(kind, newDevice);
@@ -1181,7 +1198,7 @@ export default class DefaultDeviceController
               `retry requesting new ${kind} device with minimal constraint ${fallbackConstraintsJSON}`
             );
             try {
-              newDevice.stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+              newDevice.stream = await this.mediaDevices.getUserMedia(fallbackConstraints);
               newDevice.constraints = fallbackConstraints;
               await this.handleNewInputDevice(kind, newDevice);
               hasError = false;

@@ -23,6 +23,7 @@ import EventController from '../../src/eventcontroller/EventController';
 import EventName from '../../src/eventcontroller/EventName';
 import NoOpLogger from '../../src/logger/NoOpLogger';
 import MediaDeviceProxyHandler from '../../src/mediadevicefactory/MediaDeviceProxyHandler';
+import CitrixVDIAdapter, { CitrixUCSDK } from '../../src/vdi/CitrixVDIAdapter';
 import NoOpVideoElementFactory from '../../src/videoelementfactory/NoOpVideoElementFactory';
 import DefaultVideoTransformDevice from '../../src/videoframeprocessor/DefaultVideoTransformDevice';
 import NoOpVideoFrameProcessor from '../../src/videoframeprocessor/NoOpVideoFrameProcessor';
@@ -41,6 +42,7 @@ import {
   MutingTransformDevice,
 } from '../transformdevicemock/MockTransformDevice';
 import { tick } from '../utils/fakeTimerHelper';
+import { makeCitrixAdapter, makeUcsdk } from '../vdi/FakeCitrixUCSDK';
 
 // Create fake timers with Date to ensure consistent timing
 function createFakeTimersWithDate(): sinon.SinonFakeTimers {
@@ -2949,6 +2951,73 @@ describe('DefaultDeviceController', () => {
     it('Return undefined if the input constraint deviceId is of ideal', () => {
       const constraints: MediaTrackConstraints = { deviceId: { ideal: 'device1' } };
       expect(DefaultDeviceController.getIntrinsicDeviceId(constraints)).to.be.undefined;
+    });
+  });
+
+  describe('vdi adapter', () => {
+    let ucsdk: CitrixUCSDK;
+
+    function adapterWith(devices: MediaDeviceInfo[] = []): CitrixVDIAdapter {
+      ucsdk = makeUcsdk(devices);
+      const stream = new MediaStream();
+      stream.addTrack(new MediaStreamTrack());
+      (ucsdk.getUserMedia as sinon.SinonStub).resolves(stream);
+      return makeCitrixAdapter(ucsdk);
+    }
+
+    it('acquires an audio stream on the endpoint', async () => {
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapterWith() });
+      await deviceController.startAudioInput(stringDeviceId);
+      expect((ucsdk.getUserMedia as sinon.SinonStub).calledOnce).to.be.true;
+    });
+
+    it('acquires a video stream on the endpoint', async () => {
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapterWith() });
+      await deviceController.startVideoInput(stringDeviceId);
+      expect((ucsdk.getUserMedia as sinon.SinonStub).calledOnce).to.be.true;
+    });
+
+    it('lists the endpoint devices', async () => {
+      deviceController = new DefaultDeviceController(logger, {
+        vdiAdapter: adapterWith([
+          getMediaDeviceInfo('endpoint-mic', 'audioinput', 'Endpoint Mic', 'group'),
+        ]),
+      });
+      const devices = await deviceController.listAudioInputDevices();
+      expect(devices.map(device => device.deviceId)).to.deep.equal(['endpoint-mic']);
+    });
+
+    it('triggers device labels on the endpoint', async () => {
+      deviceController = new DefaultDeviceController(logger, {
+        vdiAdapter: adapterWith([getMediaDeviceInfo('endpoint-mic', 'audioinput', '', 'group')]),
+      });
+      await deviceController.listAudioInputDevices();
+      expect((ucsdk.getUserMedia as sinon.SinonStub).calledOnceWith({ audio: true, video: true }))
+        .to.be.true;
+      expect((ucsdk.enumerateDevices as sinon.SinonStub).calledTwice).to.be.true;
+    });
+
+    it('uses the Web Audio track when no device is selected', async () => {
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapterWith() });
+      const stream = await deviceController.startAudioInput(null);
+      expect(stream).to.exist;
+      expect((ucsdk.getUserMedia as sinon.SinonStub).called).to.be.false;
+    });
+
+    it('uses the browser when the adapter supplies no devices', async () => {
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: { name: 'Other' } });
+      const spy = sinon.spy(navigator.mediaDevices, 'getUserMedia');
+      await deviceController.startAudioInput(stringDeviceId);
+      expect(spy.called).to.be.true;
+      spy.restore();
+    });
+
+    it('uses the browser without an adapter', async () => {
+      deviceController = new DefaultDeviceController(logger);
+      const spy = sinon.spy(navigator.mediaDevices, 'getUserMedia');
+      await deviceController.startAudioInput(stringDeviceId);
+      expect(spy.called).to.be.true;
+      spy.restore();
     });
   });
 });
