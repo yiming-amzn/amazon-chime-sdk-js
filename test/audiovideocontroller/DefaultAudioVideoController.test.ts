@@ -6191,6 +6191,44 @@ describe('DefaultAudioVideoController', () => {
       expect(reconnectCalled).to.be.false;
     });
 
+    it('withholds the manager from the transceiver controller for an adapter without transforms', async () => {
+      const mockManager = new MockEncodedTransformWorkerManager();
+      configuration.vdiAdapter = { name: 'Endpoint', supportsEncodedTransforms: false };
+      audioVideoController = new DefaultAudioVideoController(
+        configuration,
+        new NoOpDebugLogger(),
+        webSocketAdapter,
+        new NoOpMediaStreamBroker(),
+        reconnectController,
+        eventController,
+        mockManager
+      );
+      await start();
+      const transceiverController = audioVideoController['meetingSessionContext']
+        .transceiverController as DefaultTransceiverController;
+      expect(transceiverController['encodedTransformWorkerManager']).to.be.undefined;
+      await stop();
+    });
+
+    it('gives the manager to the transceiver controller for an adapter that does not say', async () => {
+      const mockManager = new MockEncodedTransformWorkerManager();
+      configuration.vdiAdapter = { name: 'Endpoint' };
+      audioVideoController = new DefaultAudioVideoController(
+        configuration,
+        new NoOpDebugLogger(),
+        webSocketAdapter,
+        new NoOpMediaStreamBroker(),
+        reconnectController,
+        eventController,
+        mockManager
+      );
+      await start();
+      const transceiverController = audioVideoController['meetingSessionContext']
+        .transceiverController as DefaultTransceiverController;
+      expect(transceiverController['encodedTransformWorkerManager']).to.equal(mockManager);
+      await stop();
+    });
+
     it('sets encodedTransformWorkerManager in meeting session context', async () => {
       const mockManager = new MockEncodedTransformWorkerManager();
       audioVideoController = new DefaultAudioVideoController(

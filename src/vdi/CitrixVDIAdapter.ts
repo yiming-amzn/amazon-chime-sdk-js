@@ -15,6 +15,8 @@ import VDIAdapter from './VDIAdapter';
  */
 export default class CitrixVDIAdapter implements VDIAdapter {
   readonly name = 'CitrixVDIAdapter';
+  // The endpoint encodes and decodes.
+  readonly supportsEncodedTransforms = false;
   readonly ucsdk: CitrixUCSDK;
   readonly windowHandle: string;
   readonly logger?: Logger;
