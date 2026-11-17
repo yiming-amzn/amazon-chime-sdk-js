@@ -3043,11 +3043,24 @@ describe('DefaultDeviceController', () => {
       }
     });
 
-    it('uses the Web Audio track when no device is selected', async () => {
+    it('uses the endpoint silent audio stream when no device is selected', async () => {
       deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapterWith() });
+      await deviceController.startAudioInput(null);
+      expect((ucsdk.getUserMedia as sinon.SinonStub).calledOnceWith({ audio: true })).to.be.true;
+    });
+
+    it('falls back to the Web Audio track when the endpoint has no silent stream', async () => {
+      const adapter = adapterWith();
+      (ucsdk.getUserMedia as sinon.SinonStub).rejects(new Error('no device'));
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapter });
       const stream = await deviceController.startAudioInput(null);
       expect(stream).to.exist;
-      expect((ucsdk.getUserMedia as sinon.SinonStub).called).to.be.false;
+    });
+
+    it('uses the Web Audio track when the adapter supplies no silent stream', async () => {
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: { name: 'Other' } });
+      const stream = await deviceController.startAudioInput(null);
+      expect(stream).to.exist;
     });
 
     it('uses the browser when the adapter supplies no devices', async () => {

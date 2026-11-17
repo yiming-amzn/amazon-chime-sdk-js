@@ -102,6 +102,13 @@ export default class DefaultDeviceController
     return this.vdiAdapter?.mediaDevices ?? navigator.mediaDevices;
   }
 
+  private async emptyAudioStream(): Promise<MediaStream> {
+    return (
+      (await this.vdiAdapter?.createSilentAudioStream?.()) ??
+      (DefaultDeviceController.createEmptyAudioDevice() as MediaStream)
+    );
+  }
+
   constructor(
     private logger: Logger,
     options?: {
@@ -1161,7 +1168,7 @@ export default class DefaultDeviceController
       );
       const stream = this.intrinsicDeviceAsMediaStream(device);
       if (kind === 'audio' && device === null) {
-        newDevice.stream = DefaultDeviceController.createEmptyAudioDevice() as MediaStream;
+        newDevice.stream = await this.emptyAudioStream();
         newDevice.constraints = null;
       } else if (stream) {
         this.logger.info(`using media stream ${stream.id} for ${kind} device`);
@@ -1229,7 +1236,7 @@ export default class DefaultDeviceController
         if (kind === 'audio') {
           this.logger.info(`choosing null ${kind} device instead`);
           try {
-            newDevice.stream = DefaultDeviceController.createEmptyAudioDevice();
+            newDevice.stream = await this.emptyAudioStream();
             newDevice.constraints = null;
             await this.handleNewInputDevice(kind, newDevice);
           } catch (error) {

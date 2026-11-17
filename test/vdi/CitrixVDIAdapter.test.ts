@@ -56,6 +56,36 @@ describe('CitrixVDIAdapter', () => {
     ).to.be.instanceOf(FakePeerConnection);
   });
 
+  describe('createSilentAudioStream', () => {
+    it('returns a muted endpoint microphone', async () => {
+      const adapter = new CitrixVDIAdapter({
+        ucsdk,
+        windowHandle: '0x1f',
+        logger: new NoOpLogger(),
+      });
+      const stream = await adapter.createSilentAudioStream();
+      expect((ucsdk.getUserMedia as sinon.SinonStub).calledOnceWith({ audio: true })).to.be.true;
+      expect(stream.getAudioTracks()[0].enabled).to.be.false;
+    });
+
+    it('returns null when the endpoint microphone is unavailable', async () => {
+      (ucsdk.getUserMedia as sinon.SinonStub).rejects(new Error('no device'));
+      const adapter = new CitrixVDIAdapter({
+        ucsdk,
+        windowHandle: '0x1f',
+        logger: new NoOpLogger(),
+      });
+      expect(await adapter.createSilentAudioStream()).to.be.null;
+    });
+
+    it('works without a logger', async () => {
+      const adapter = new CitrixVDIAdapter({ ucsdk, windowHandle: '0x1f' });
+      expect(await adapter.createSilentAudioStream()).to.not.be.null;
+      (ucsdk.getUserMedia as sinon.SinonStub).rejects(new Error('no device'));
+      expect(await adapter.createSilentAudioStream()).to.be.null;
+    });
+  });
+
   describe('elements', () => {
     let adapter: CitrixVDIAdapter;
 

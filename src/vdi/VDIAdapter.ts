@@ -19,6 +19,13 @@ export default interface VDIAdapter {
   readonly mediaDevices?: Pick<MediaDevices, 'getUserMedia' | 'enumerateDevices'>;
 
   /**
+   * The stream sent when no microphone is selected, for a peer connection that
+   * refuses the SDK's Web Audio track. Without it, or when it returns null, the
+   * SDK sends the Web Audio track.
+   */
+  createSilentAudioStream?(): Promise<MediaStream | null>;
+
+  /**
    * False when the platform encodes and decodes on its endpoint, so there are no
    * frames in the browser for encoded transforms. Without it, true.
    */
