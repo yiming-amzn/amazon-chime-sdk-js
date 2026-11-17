@@ -36,6 +36,24 @@ export default class CitrixVDIAdapter implements VDIAdapter {
     return CitrixRTCPeerConnection.create(configuration, this);
   }
 
+  // A browser synthesized track is refused by the redirected connection. A
+  // muted endpoint microphone sends silence and completes the join handshake.
+  async createSilentAudioStream(): Promise<MediaStream | null> {
+    try {
+      const stream = await this.ucsdk.getUserMedia({ audio: true });
+      for (const track of stream.getAudioTracks()) {
+        track.enabled = false;
+      }
+      this.logger?.warn('CitrixVDIAdapter: using a muted endpoint microphone as silent audio');
+      return stream;
+    } catch (e) {
+      this.logger?.warn(
+        `CitrixVDIAdapter: no silent audio stream, the join may not complete: ${(e as Error).message}`
+      );
+      return null;
+    }
+  }
+
   // The endpoint draws redirected video over the browser window and plays
   // redirected audio itself, so the UCSDK maps the elements that show its streams.
   bindVideoElement(element: HTMLVideoElement, stream: MediaStream): void {
