@@ -585,13 +585,17 @@ export default class DefaultAudioVideoController
       this._meetingSessionTimingManager.onRemoteAudioAdded();
     }
 
+    const encodedTransformWorkerManager =
+      this.configuration.vdiAdapter?.supportsEncodedTransforms === false
+        ? undefined
+        : this._encodedTransformWorkerManager;
     if (!useAudioConnection) {
       this.logger.info(`Using video only transceiver controller`);
       this.meetingSessionContext.transceiverController = new VideoOnlyTransceiverController(
         this.logger,
         this.meetingSessionContext.browserBehavior,
         this.meetingSessionContext,
-        this._encodedTransformWorkerManager
+        encodedTransformWorkerManager
       );
     } else if (this.enableSimulcast) {
       this.logger.info(`Using transceiver controller with simulcast support`);
@@ -605,14 +609,14 @@ export default class DefaultAudioVideoController
             this.logger,
             this.meetingSessionContext.browserBehavior,
             this.meetingSessionContext,
-            this._encodedTransformWorkerManager
+            encodedTransformWorkerManager
           );
       } else {
         this.meetingSessionContext.transceiverController = new SimulcastTransceiverController(
           this.logger,
           this.meetingSessionContext.browserBehavior,
           this.meetingSessionContext,
-          this._encodedTransformWorkerManager
+          encodedTransformWorkerManager
         );
       }
     } else {
@@ -621,7 +625,7 @@ export default class DefaultAudioVideoController
         this.logger,
         this.meetingSessionContext.browserBehavior,
         this.meetingSessionContext,
-        this._encodedTransformWorkerManager
+        encodedTransformWorkerManager
       );
     }
 

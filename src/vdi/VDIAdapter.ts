@@ -19,6 +19,12 @@ export default interface VDIAdapter {
   readonly mediaDevices?: Pick<MediaDevices, 'getUserMedia' | 'enumerateDevices'>;
 
   /**
+   * False when the platform encodes and decodes on its endpoint, so there are no
+   * frames in the browser for encoded transforms. Without it, true.
+   */
+  readonly supportsEncodedTransforms?: boolean;
+
+  /**
    * Called just before a video element's `srcObject` is set to a stream, for a
    * platform that renders the stream itself.
    */

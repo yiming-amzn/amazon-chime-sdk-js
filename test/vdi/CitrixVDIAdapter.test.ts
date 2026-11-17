@@ -36,6 +36,7 @@ describe('CitrixVDIAdapter', () => {
     expect(adapter.name).to.equal('CitrixVDIAdapter');
     expect(adapter.ucsdk).to.equal(ucsdk);
     expect(adapter.windowHandle).to.equal('0x1f');
+    expect(adapter.supportsEncodedTransforms).to.be.false;
   });
 
   it('opens and lists devices with CitrixMediaDevices', () => {
