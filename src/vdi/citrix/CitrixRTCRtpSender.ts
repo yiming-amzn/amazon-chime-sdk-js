@@ -5,7 +5,12 @@
 export default class CitrixRTCRtpSender implements RTCRtpSender {
   constructor(public readonly inner: RTCRtpSender) {}
 
+  // The UCSDK rejects a null track. On a sender with no track the call would change nothing, and
+  // such a sender can report a placeholder track with no id.
   replaceTrack(track: MediaStreamTrack | null): Promise<void> {
+    if (!track && !this.inner.track?.id) {
+      return Promise.resolve();
+    }
     return this.inner.replaceTrack(track);
   }
 
