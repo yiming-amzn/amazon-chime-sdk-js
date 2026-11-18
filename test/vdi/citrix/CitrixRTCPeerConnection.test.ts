@@ -13,7 +13,7 @@ import CitrixUCSDK from '../../../src/vdi/CitrixUCSDK';
 import CitrixVDIAdapter from '../../../src/vdi/CitrixVDIAdapter';
 import { makeUcsdk } from '../FakeCitrixUCSDK';
 
-// A UCSDK transceiver with its own sender and receiver.
+// A UCSDK transceiver: reports `mid` through a getter and has its own sender and receiver.
 class FakeTransceiver {
   sender = { kind: 'sender' };
   receiver = { kind: 'receiver' };
@@ -27,6 +27,16 @@ class FakeTransceiver {
 
 describe('CitrixRTCPeerConnection', () => {
   const expect: Chai.ExpectStatic = chai.expect;
+  const sdp = [
+    'v=0',
+    'm=audio 9 UDP/TLS/RTP/SAVPF 111',
+    'a=mid:0',
+    'm=video 9 UDP/TLS/RTP/SAVPF 96',
+    'a=mid:1',
+    'm=video 9 UDP/TLS/RTP/SAVPF 96',
+    'a=mid:2',
+    '',
+  ].join('\r\n');
   let ucsdk: CitrixUCSDK;
   let adapter: CitrixVDIAdapter;
 
@@ -36,8 +46,13 @@ describe('CitrixRTCPeerConnection', () => {
   });
 
   // A UCSDK connection whose getTransceivers() returns `listed`; addTransceiver returns `added`.
-  function peerWith(listed: object[], added: object = new FakeTransceiver()): RTCPeerConnection {
+  function peerWith(
+    listed: object[],
+    localSdp: string | null = sdp,
+    added: object = new FakeTransceiver()
+  ): RTCPeerConnection {
     ucsdk.CitrixPeerConnection = class {
+      localDescription = localSdp === null ? null : { sdp: localSdp };
       addTransceiver(): object {
         return added;
       }
@@ -48,6 +63,10 @@ describe('CitrixRTCPeerConnection', () => {
     return CitrixRTCPeerConnection.create({}, adapter);
   }
 
+  function midOf(peer: RTCPeerConnection, index: number): string | null {
+    return peer.getTransceivers()[index].mid;
+  }
+
   it('wraps the UCSDK peer connection', () => {
     const peer = peerWith([]);
     expect(peer).to.be.instanceOf(CitrixRTCPeerConnection);
@@ -56,10 +75,91 @@ describe('CitrixRTCPeerConnection', () => {
     expect(unwrap(plain)).to.equal(plain);
   });
 
+  describe('mid', () => {
+    it('returns the mid a transceiver reports', () => {
+      expect(midOf(peerWith([new FakeTransceiver('1')]), 0)).to.equal('1');
+    });
+
+    it('pairs unclaimed SDP mids with mid-less transceivers in order', () => {
+      const peer = peerWith([
+        new FakeTransceiver('0'),
+        new FakeTransceiver(),
+        new FakeTransceiver(),
+      ]);
+      expect(midOf(peer, 1)).to.equal('1');
+      expect(midOf(peer, 2)).to.equal('2');
+    });
+
+    it('treats an empty reported mid as unset', () => {
+      const peer = peerWith([
+        new FakeTransceiver('0'),
+        new FakeTransceiver(''),
+        new FakeTransceiver(),
+      ]);
+      expect(midOf(peer, 1)).to.equal('1');
+    });
+
+    it('skips SDP mids already claimed by another transceiver', () => {
+      const peer = peerWith([
+        new FakeTransceiver('1'),
+        new FakeTransceiver(),
+        new FakeTransceiver(),
+      ]);
+      expect(midOf(peer, 1)).to.equal('0');
+      expect(midOf(peer, 2)).to.equal('2');
+    });
+
+    it('switches to the reported mid once the UCSDK binds it', () => {
+      const transceiver = new FakeTransceiver();
+      const peer = peerWith([new FakeTransceiver('0'), new FakeTransceiver('1'), transceiver]);
+      expect(midOf(peer, 2)).to.equal('2');
+      transceiver.reported = '5';
+      expect(midOf(peer, 2)).to.equal('5');
+    });
+
+    it('derives the mid of the transceiver addTransceiver returns', () => {
+      const added = new FakeTransceiver();
+      const peer = peerWith(
+        [new FakeTransceiver('0'), new FakeTransceiver('1'), added],
+        sdp,
+        added
+      );
+      expect(peer.addTransceiver('video').mid).to.equal('2');
+    });
+
+    it('returns null when the transceiver is not listed', () => {
+      const peer = peerWith([
+        new FakeTransceiver('0'),
+        new FakeTransceiver('1'),
+        new FakeTransceiver(),
+      ]);
+      expect(peer.addTransceiver('video').mid).to.equal(null);
+    });
+
+    it('returns null when the counts of mid-less transceivers and unclaimed mids differ', () => {
+      const peer = peerWith([new FakeTransceiver('0'), new FakeTransceiver()]);
+      expect(midOf(peer, 1)).to.equal(null);
+    });
+
+    it('returns null when there is no local description', () => {
+      expect(midOf(peerWith([new FakeTransceiver()], null), 0)).to.equal(null);
+    });
+
+    it('works without a logger', () => {
+      adapter = new CitrixVDIAdapter({ ucsdk, windowHandle: '0x1f' });
+      const peer = peerWith([
+        new FakeTransceiver('0'),
+        new FakeTransceiver('1'),
+        new FakeTransceiver(),
+      ]);
+      expect(midOf(peer, 2)).to.equal('2');
+    });
+  });
+
   describe('identity', () => {
     it('hands out one wrapper per UCSDK transceiver, sender and receiver', () => {
       const transceiver = new FakeTransceiver('0');
-      const peer = peerWith([transceiver], transceiver);
+      const peer = peerWith([transceiver], sdp, transceiver);
       const wrapped = peer.getTransceivers()[0];
       expect(wrapped).to.be.instanceOf(CitrixRTCRtpTransceiver);
       expect(peer.getTransceivers()[0]).to.equal(wrapped);
@@ -71,7 +171,7 @@ describe('CitrixRTCPeerConnection', () => {
     });
 
     it('passes a missing object through unwrapped', () => {
-      const peer = peerWith([], null);
+      const peer = peerWith([], sdp, null);
       expect(peer.addTransceiver('video')).to.equal(null);
     });
 

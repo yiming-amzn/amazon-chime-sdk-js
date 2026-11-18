@@ -10,8 +10,10 @@ export default class CitrixRTCRtpTransceiver implements RTCRtpTransceiver {
     private readonly peer: CitrixRTCPeerConnection
   ) {}
 
+  // The UCSDK binds mid asynchronously, so it can still be unset after setLocalDescription.
+  // Derive it from the local description until it is.
   get mid(): string | null {
-    return this.inner.mid;
+    return this.inner.mid || this.peer.deriveMid(this);
   }
 
   get sender(): RTCRtpSender {
