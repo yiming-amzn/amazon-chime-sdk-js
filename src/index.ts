@@ -59,6 +59,10 @@ import CheckVideoConnectivityFeedback from './meetingreadinesschecker/CheckVideo
 import CheckVideoInputFeedback from './meetingreadinesschecker/CheckVideoInputFeedback';
 import CitrixBootstrap from './vdi/CitrixBootstrap';
 import CitrixMediaDevices from './vdi/CitrixMediaDevices';
+import CitrixRTCPeerConnection from './vdi/citrix/CitrixRTCPeerConnection';
+import CitrixRTCRtpReceiver from './vdi/citrix/CitrixRTCRtpReceiver';
+import CitrixRTCRtpSender from './vdi/citrix/CitrixRTCRtpSender';
+import CitrixRTCRtpTransceiver from './vdi/citrix/CitrixRTCRtpTransceiver';
 import CitrixUCSDK from './vdi/CitrixUCSDK';
 import CitrixVDIAdapter from './vdi/CitrixVDIAdapter';
 import CitrixVDIAdapterConnectOptions from './vdi/CitrixVDIAdapterConnectOptions';
@@ -448,6 +452,10 @@ export {
   CheckVideoInputFeedback,
   CitrixBootstrap,
   CitrixMediaDevices,
+  CitrixRTCPeerConnection,
+  CitrixRTCRtpReceiver,
+  CitrixRTCRtpSender,
+  CitrixRTCRtpTransceiver,
   CitrixUCSDK,
   CitrixVDIAdapter,
   CitrixVDIAdapterConnectOptions,
