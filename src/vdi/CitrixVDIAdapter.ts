@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import Logger from '../logger/Logger';
+import CitrixRTCPeerConnection from './citrix/CitrixRTCPeerConnection';
 import CitrixMediaDevices from './CitrixMediaDevices';
 import CitrixUCSDK from './CitrixUCSDK';
 import CitrixVDIAdapterConnectOptions from './CitrixVDIAdapterConnectOptions';
@@ -30,7 +31,7 @@ export default class CitrixVDIAdapter implements VDIAdapter {
 
   createPeerConnection(configuration: RTCConfiguration): RTCPeerConnection {
     this.logger?.info('CitrixVDIAdapter: peer connection is redirected');
-    return new this.ucsdk.CitrixPeerConnection(configuration);
+    return CitrixRTCPeerConnection.create(configuration, this);
   }
 
   // The endpoint draws redirected video over the browser window and plays
