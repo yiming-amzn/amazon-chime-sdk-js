@@ -22,6 +22,9 @@ describe('CitrixRTCRtpSender', () => {
       setStreams: sinon.stub(),
     };
     const sender = new CitrixRTCRtpSender(inner as unknown as RTCRtpSender);
+    await sender.replaceTrack(null);
+    expect(inner.replaceTrack.calledOnceWith(null)).to.be.true;
+    inner.replaceTrack.resetHistory();
     expect(sender.dtmf).to.equal(inner.dtmf);
     expect(sender.track).to.equal(inner.track);
     expect(sender.transport).to.equal(inner.transport);
@@ -41,5 +44,34 @@ describe('CitrixRTCRtpSender', () => {
     const stream = {} as MediaStream;
     sender.setStreams(stream);
     expect(inner.setStreams.calledOnceWith(stream)).to.be.true;
+  });
+
+  describe('replaceTrack', () => {
+    function senderWith(track: { id?: string } | null): {
+      inner: { track: { id?: string } | null; replaceTrack: sinon.SinonStub };
+      sender: CitrixRTCRtpSender;
+    } {
+      const inner = { track, replaceTrack: sinon.stub().resolves() };
+      return { inner, sender: new CitrixRTCRtpSender(inner as unknown as RTCRtpSender) };
+    }
+
+    it('skips a null track on a sender with no track', async () => {
+      const { inner, sender } = senderWith(null);
+      await sender.replaceTrack(null);
+      expect(inner.replaceTrack.called).to.be.false;
+    });
+
+    it('skips a null track on a sender with a placeholder track', async () => {
+      const { inner, sender } = senderWith({});
+      await sender.replaceTrack(null);
+      expect(inner.replaceTrack.called).to.be.false;
+    });
+
+    it('sets a track on a sender with no track', async () => {
+      const { inner, sender } = senderWith(null);
+      const track = {} as MediaStreamTrack;
+      await sender.replaceTrack(track);
+      expect(inner.replaceTrack.args).to.deep.equal([[track]]);
+    });
   });
 });
