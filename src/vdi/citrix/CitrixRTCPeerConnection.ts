@@ -1,6 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import SDP from '../../sdp/SDP';
 import CitrixVDIAdapter from '../CitrixVDIAdapter';
 import CitrixRTCRtpReceiver from './CitrixRTCRtpReceiver';
 import CitrixRTCRtpSender from './CitrixRTCRtpSender';
@@ -283,6 +284,34 @@ export default class CitrixRTCPeerConnection implements RTCPeerConnection {
 
   wrapReceiver(receiver: RTCRtpReceiver): RTCRtpReceiver {
     return this.cached(receiver, () => new CitrixRTCRtpReceiver(receiver));
+  }
+
+  /**
+   * Pairs the transceivers that have no mid with the local description's unclaimed mids, in
+   * order. Returns null unless the pairing is unambiguous: when the counts differ, a guess could
+   * wire a transceiver to the wrong video stream.
+   */
+  deriveMid(transceiver: RTCRtpTransceiver): string | null {
+    const sdp = this.inner.localDescription?.sdp;
+    if (!sdp) {
+      return null;
+    }
+    const transceivers = this.getTransceivers();
+    const nativeMid = (t: RTCRtpTransceiver): string | null => unwrap(t).mid;
+    const claimed = new Set(transceivers.map(nativeMid).filter(mid => !!mid));
+    const unclaimed = new SDP(sdp)
+      .mediaSections()
+      .map(section => section.mid)
+      .filter(mid => !!mid && !claimed.has(mid));
+    const midless = transceivers.filter(t => !nativeMid(t));
+    const index = midless.indexOf(transceiver);
+    if (unclaimed.length !== midless.length || index < 0) {
+      return null;
+    }
+    this.adapter.logger?.warn(
+      `CitrixVDIAdapter: transceiver has no mid; derived ${unclaimed[index]}`
+    );
+    return unclaimed[index];
   }
 
   private cached<T extends object>(inner: T, make: () => T): T {
