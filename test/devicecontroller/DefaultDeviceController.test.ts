@@ -23,7 +23,8 @@ import EventController from '../../src/eventcontroller/EventController';
 import EventName from '../../src/eventcontroller/EventName';
 import NoOpLogger from '../../src/logger/NoOpLogger';
 import MediaDeviceProxyHandler from '../../src/mediadevicefactory/MediaDeviceProxyHandler';
-import CitrixVDIAdapter, { CitrixUCSDK } from '../../src/vdi/CitrixVDIAdapter';
+import CitrixUCSDK from '../../src/vdi/citrix/CitrixUCSDK';
+import CitrixVDIAdapter from '../../src/vdi/citrix/CitrixVDIAdapter';
 import NoOpVideoElementFactory from '../../src/videoelementfactory/NoOpVideoElementFactory';
 import DefaultVideoTransformDevice from '../../src/videoframeprocessor/DefaultVideoTransformDevice';
 import NoOpVideoFrameProcessor from '../../src/videoframeprocessor/NoOpVideoFrameProcessor';
@@ -42,7 +43,7 @@ import {
   MutingTransformDevice,
 } from '../transformdevicemock/MockTransformDevice';
 import { tick } from '../utils/fakeTimerHelper';
-import { makeCitrixAdapter, makeUcsdk } from '../vdi/FakeCitrixUCSDK';
+import { makeCitrixAdapter, makeUcsdk } from '../vdi/citrix/FakeCitrixUCSDK';
 
 // Create fake timers with Date to ensure consistent timing
 function createFakeTimersWithDate(): sinon.SinonFakeTimers {
@@ -2995,6 +2996,31 @@ describe('DefaultDeviceController', () => {
       expect((ucsdk.getUserMedia as sinon.SinonStub).calledOnceWith({ audio: true, video: true }))
         .to.be.true;
       expect((ucsdk.enumerateDevices as sinon.SinonStub).calledTwice).to.be.true;
+    });
+
+    it('retries an over-constrained request on the endpoint', async () => {
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapterWith() });
+      const browser = sinon.spy(navigator.mediaDevices, 'getUserMedia');
+      const gum = ucsdk.getUserMedia as sinon.SinonStub;
+      gum.onFirstCall().rejects({ name: 'OverconstrainedError', constraint: 'width' });
+      try {
+        await deviceController.startVideoInput(stringDeviceId);
+        expect(gum.calledTwice).to.be.true;
+        expect(browser.called).to.be.false;
+      } finally {
+        browser.restore();
+      }
+    });
+
+    it('lists no devices when the endpoint has none', async () => {
+      deviceController = new DefaultDeviceController(logger, { vdiAdapter: adapterWith([]) });
+      const browser = sinon.spy(navigator.mediaDevices, 'enumerateDevices');
+      try {
+        expect(await deviceController.listAudioInputDevices()).to.deep.equal([]);
+        expect(browser.called).to.be.false;
+      } finally {
+        browser.restore();
+      }
     });
 
     it('uses the Web Audio track when no device is selected', async () => {

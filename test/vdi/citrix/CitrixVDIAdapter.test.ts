@@ -5,15 +5,14 @@ import * as chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
 
-import NoOpLogger from '../../src/logger/NoOpLogger';
-import CitrixMediaDevices from '../../src/vdi/CitrixMediaDevices';
-import CitrixVDIAdapter, {
-  CitrixBootstrap,
-  CitrixUCSDK,
-  CitrixVMEvent,
-} from '../../src/vdi/CitrixVDIAdapter';
-import DOMMockBehavior from '../dommock/DOMMockBehavior';
-import DOMMockBuilder from '../dommock/DOMMockBuilder';
+import NoOpLogger from '../../../src/logger/NoOpLogger';
+import CitrixBootstrap from '../../../src/vdi/citrix/CitrixBootstrap';
+import CitrixMediaDevices from '../../../src/vdi/citrix/CitrixMediaDevices';
+import CitrixUCSDK from '../../../src/vdi/citrix/CitrixUCSDK';
+import CitrixVDIAdapter from '../../../src/vdi/citrix/CitrixVDIAdapter';
+import CitrixVMEvent from '../../../src/vdi/citrix/CitrixVMEvent';
+import DOMMockBehavior from '../../dommock/DOMMockBehavior';
+import DOMMockBuilder from '../../dommock/DOMMockBuilder';
 import { FakePeerConnection, makeUcsdk } from './FakeCitrixUCSDK';
 
 describe('CitrixVDIAdapter', () => {
@@ -123,6 +122,57 @@ describe('CitrixVDIAdapter', () => {
       await expect(
         CitrixVDIAdapter.connect({ ucsdk, bootstrap, vendor: 'Vendor', timeoutMs: 5 })
       ).to.be.rejectedWith('timed out waiting for the window handle');
+    });
+
+    it('logs the VM events it receives', async () => {
+      bootstrap = makeBootstrap(Promise.resolve('0x2a'));
+      const logger = new NoOpLogger();
+      const info = sinon.spy(logger, 'info');
+      const warn = sinon.spy(logger, 'warn');
+      emitOnRegister(
+        { event: 'vdiClientDisconnected', reason: 7, msg: 'channel closed' },
+        { event: 'vdiClientOther' },
+        { event: 'vdiClientConnected', version: { receiver: '24.11' } }
+      );
+      await CitrixVDIAdapter.connect({ ucsdk, bootstrap, vendor: 'Vendor', logger });
+      expect(warn.calledWith('CitrixVDIAdapter: endpoint disconnected, reason 7, channel closed'))
+        .to.be.true;
+      expect(info.calledWith('CitrixVDIAdapter: VM event vdiClientOther')).to.be.true;
+      expect(info.calledWith('CitrixVDIAdapter: endpoint connected, version {"receiver":"24.11"}'))
+        .to.be.true;
+    });
+
+    it('waits only for vdiClientConnected', async () => {
+      bootstrap = makeBootstrap(Promise.resolve('0x2a'));
+      emitOnRegister({ event: 'vdiClientDisconnected' }, { event: 'vdiClientOther' });
+      await expect(
+        CitrixVDIAdapter.connect({ ucsdk, bootstrap, vendor: 'Vendor', timeoutMs: 20 })
+      ).to.be.rejectedWith('timed out waiting for the endpoint connection');
+    });
+
+    it('applies the timeout to each wait', async () => {
+      bootstrap = makeBootstrap(new Promise(resolve => setTimeout(() => resolve('0x2a'), 30)));
+      const start = Date.now();
+      await expect(
+        CitrixVDIAdapter.connect({ ucsdk, bootstrap, vendor: 'Vendor', timeoutMs: 50 })
+      ).to.be.rejectedWith('timed out waiting for the endpoint connection');
+      expect(Date.now() - start).to.be.at.least(75);
+    });
+
+    it('waits 10 s for each by default', async () => {
+      const clock = sinon.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      try {
+        bootstrap = makeBootstrap(new Promise<string>(() => {}));
+        let rejected = false;
+        const result = CitrixVDIAdapter.connect({ ucsdk, bootstrap, vendor: 'Vendor' });
+        result.catch(() => (rejected = true));
+        await clock.tickAsync(9999);
+        expect(rejected).to.be.false;
+        await clock.tickAsync(1);
+        await expect(result).to.be.rejectedWith('timed out waiting for the window handle');
+      } finally {
+        clock.restore();
+      }
     });
 
     it('rejects when the endpoint does not connect in time', async () => {

@@ -1,50 +1,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import Logger from '../logger/Logger';
+import Logger from '../../logger/Logger';
+import VDIAdapter from '../VDIAdapter';
 import CitrixMediaDevices from './CitrixMediaDevices';
-import VDIAdapter from './VDIAdapter';
-
-/** The Citrix UCSDK (`CitrixWebRTC`) calls used here. The application supplies the object. */
-export interface CitrixUCSDK {
-  initUCSDK(vendor: string): void;
-  setVMEventCallback(callback: (event: CitrixVMEvent) => void): void;
-  isFeatureOn(feature: string): boolean;
-  CitrixPeerConnection: new (configuration: RTCConfiguration) => RTCPeerConnection;
-  getUserMedia(constraints: MediaStreamConstraints): Promise<MediaStream>;
-  enumerateDevices(): Promise<MediaDeviceInfo[]>;
-}
-
-/** The Citrix Bootstrap (`CitrixBootstrap`) calls used here. The application supplies the object. */
-export interface CitrixBootstrap {
-  initBootstrap(vendor: string): void;
-  isBootstrapInitialized(): boolean;
-  getWindowHandle(): Promise<string>;
-}
-
-/** An event the UCSDK passes to the `setVMEventCallback` callback. */
-export interface CitrixVMEvent {
-  event: string;
-  [key: string]: unknown;
-}
-
-export interface CitrixVDIAdapterConnectOptions {
-  ucsdk: CitrixUCSDK;
-  bootstrap: CitrixBootstrap;
-  /** Vendor name passed to `initBootstrap` and `initUCSDK`. */
-  vendor: string;
-  /** Limit for the window handle and for the endpoint to connect. Defaults to 15000. */
-  timeoutMs?: number;
-  logger?: Logger;
-}
-
-export interface CitrixVDIAdapterOptions {
-  /** Initialized UCSDK object, for example from `connect.getCitrixUCSDK()`. */
-  ucsdk: CitrixUCSDK;
-  /** Hex window handle of the top-level window, from the Citrix Bootstrap. */
-  windowHandle: string;
-  logger?: Logger;
-}
+import CitrixUCSDK from './CitrixUCSDK';
+import CitrixVDIAdapterConnectOptions from './CitrixVDIAdapterConnectOptions';
+import CitrixVDIAdapterOptions from './CitrixVDIAdapterOptions';
 
 /**
  * Citrix HDX media redirection. The SDK does not include the UCSDK; the
@@ -71,15 +33,18 @@ export default class CitrixVDIAdapter implements VDIAdapter {
 
   /**
    * Initializes the Bootstrap and the UCSDK, waits for the endpoint to connect, and returns
-   * an adapter for it. Rejects if the endpoint does not connect in time or cannot redirect
-   * WebRTC, so the application can join without one instead.
+   * an adapter for it. Rejects if the window handle or the endpoint connection does not
+   * arrive within `timeoutMs` each, or the endpoint cannot redirect WebRTC, so the
+   * application can join without one instead.
    *
    * This registers the UCSDK VM event callback, which holds a single listener. When another
-   * component on the page owns it, such as a Citrix softphone, construct the adapter with
-   * that component's window handle instead.
+   * component on the page already initialized the UCSDK, such as a Citrix softphone,
+   * construct the adapter with that component's window handle instead.
    */
   static async connect(options: CitrixVDIAdapterConnectOptions): Promise<CitrixVDIAdapter> {
-    const { ucsdk, bootstrap, vendor, timeoutMs = 15000, logger } = options;
+    const { ucsdk, bootstrap, vendor, timeoutMs = 10000, logger } = options;
+    // TODO: VDAs without Bootstrap support. connect-rtc-js checks
+    // getRedirectionState() and initializes the UCSDK without the Bootstrap on -2.
     if (!bootstrap.isBootstrapInitialized()) {
       bootstrap.initBootstrap(vendor);
     }
@@ -87,12 +52,22 @@ export default class CitrixVDIAdapter implements VDIAdapter {
     if (!windowHandle) {
       throw new Error('CitrixVDIAdapter: the Bootstrap returned no window handle');
     }
+    // TODO: handle VDI disconnection and reconnection in a follow-up PR.
     const connected = new Promise<void>((resolve, reject) => {
       ucsdk.setVMEventCallback(event => {
-        logger?.info(`CitrixVDIAdapter: VM event ${event.event}`);
-        if (event.event !== 'vdiClientConnected') {
+        if (event.event === 'vdiClientDisconnected') {
+          logger?.warn(
+            `CitrixVDIAdapter: endpoint disconnected, reason ${event.reason}, ${event.msg}`
+          );
           return;
         }
+        if (event.event !== 'vdiClientConnected') {
+          logger?.info(`CitrixVDIAdapter: VM event ${event.event}`);
+          return;
+        }
+        logger?.info(
+          `CitrixVDIAdapter: endpoint connected, version ${JSON.stringify(event.version)}`
+        );
         if (ucsdk.isFeatureOn('webrtc1.0')) {
           resolve();
         } else {
@@ -100,7 +75,6 @@ export default class CitrixVDIAdapter implements VDIAdapter {
         }
       });
     });
-    // A second call is a no-op, so this is safe when the UCSDK is already initialized.
     ucsdk.initUCSDK(vendor);
     await withTimeout(connected, timeoutMs, 'endpoint connection');
     return new CitrixVDIAdapter({ ucsdk, windowHandle, logger });

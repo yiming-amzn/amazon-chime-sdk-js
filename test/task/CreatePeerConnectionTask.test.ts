@@ -28,7 +28,7 @@ import DOMMockBehavior from '../dommock/DOMMockBehavior';
 import DOMMockBuilder, { StoppableMediaStreamTrack } from '../dommock/DOMMockBuilder';
 import SDPMock from '../sdp/SDPMock';
 import { createFakeTimers, tick } from '../utils/fakeTimerHelper';
-import { makeCitrixAdapter, makeUcsdk } from '../vdi/FakeCitrixUCSDK';
+import { makeCitrixAdapter, makeUcsdk } from '../vdi/citrix/FakeCitrixUCSDK';
 
 describe('CreatePeerConnectionTask', () => {
   const expect: Chai.ExpectStatic = chai.expect;
@@ -1095,10 +1095,13 @@ describe('CreatePeerConnectionTask', () => {
       ucsdk.CitrixPeerConnection = RedirectedPeerConnection;
       context.meetingSessionConfiguration = new MeetingSessionConfiguration();
       context.meetingSessionConfiguration.vdiAdapter = makeCitrixAdapter(ucsdk);
+      const logSpy = sinon.spy(context.logger, 'info');
 
       await new CreatePeerConnectionTask(context).run();
 
       expect(context.peer).to.be.instanceOf(RedirectedPeerConnection);
+      expect(logSpy.calledWith('creating new peer connection with CitrixVDIAdapter')).to.be.true;
+      logSpy.restore();
     });
 
     it('creates a browser peer connection when the adapter supplies none', async () => {

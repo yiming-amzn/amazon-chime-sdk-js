@@ -57,8 +57,13 @@ import CheckNetworkTCPConnectivityFeedback from './meetingreadinesschecker/Check
 import CheckNetworkUDPConnectivityFeedback from './meetingreadinesschecker/CheckNetworkUDPConnectivityFeedback';
 import CheckVideoConnectivityFeedback from './meetingreadinesschecker/CheckVideoConnectivityFeedback';
 import CheckVideoInputFeedback from './meetingreadinesschecker/CheckVideoInputFeedback';
-import CitrixMediaDevices from './vdi/CitrixMediaDevices';
-import CitrixVDIAdapter from './vdi/CitrixVDIAdapter';
+import CitrixBootstrap from './vdi/citrix/CitrixBootstrap';
+import CitrixMediaDevices from './vdi/citrix/CitrixMediaDevices';
+import CitrixUCSDK from './vdi/citrix/CitrixUCSDK';
+import CitrixVDIAdapter from './vdi/citrix/CitrixVDIAdapter';
+import CitrixVDIAdapterConnectOptions from './vdi/citrix/CitrixVDIAdapterConnectOptions';
+import CitrixVDIAdapterOptions from './vdi/citrix/CitrixVDIAdapterOptions';
+import CitrixVMEvent from './vdi/citrix/CitrixVMEvent';
 import CleanRestartedSessionTask from './task/CleanRestartedSessionTask';
 import CleanStoppedSessionTask from './task/CleanStoppedSessionTask';
 import ClientMetricReport from './clientmetricreport/ClientMetricReport';
@@ -164,7 +169,6 @@ import LogLevel from './logger/LogLevel';
 import Logger from './logger/Logger';
 import MediaDeviceFactory from './mediadevicefactory/MediaDeviceFactory';
 import MediaDeviceProxyHandler from './mediadevicefactory/MediaDeviceProxyHandler';
-import MediaDevices from './mediadevices/MediaDevices';
 import MediaMetricsEncodedTransformManager from './encodedtransformmanager/MediaMetricsEncodedTransformManager';
 import MediaStreamBroker from './mediastreambroker/MediaStreamBroker';
 import MediaStreamBrokerObserver from './mediastreambrokerobserver/MediaStreamBrokerObserver';
@@ -216,7 +220,6 @@ import OverconstrainedError from './devicecontroller/OverconstrainedError';
 import POSTLogger from './logger/POSTLogger';
 import POSTLoggerOptions from './logger/POSTLoggerOptions';
 import ParallelGroupTask from './task/ParallelGroupTask';
-import PeerConnection from './peerconnection/PeerConnection';
 import PermissionDeniedError from './devicecontroller/PermissionDeniedError';
 import PingPong from './pingpong/PingPong';
 import PingPongObserver from './pingpongobserver/PingPongObserver';
@@ -443,8 +446,13 @@ export {
   CheckNetworkUDPConnectivityFeedback,
   CheckVideoConnectivityFeedback,
   CheckVideoInputFeedback,
+  CitrixBootstrap,
   CitrixMediaDevices,
+  CitrixUCSDK,
   CitrixVDIAdapter,
+  CitrixVDIAdapterConnectOptions,
+  CitrixVDIAdapterOptions,
+  CitrixVMEvent,
   CleanRestartedSessionTask,
   CleanStoppedSessionTask,
   ClientMetricReport,
@@ -553,7 +561,6 @@ export {
   MaybeProvider,
   MediaDeviceFactory,
   MediaDeviceProxyHandler,
-  MediaDevices,
   MediaMetricsEncodedTransformManager,
   MediaStreamBroker,
   MediaStreamBrokerObserver,
@@ -615,7 +622,6 @@ export {
   POSTLoggerOptions,
   ParallelGroupTask,
   PartialOrd,
-  PeerConnection,
   PermissionDeniedError,
   PingPong,
   PingPongObserver,

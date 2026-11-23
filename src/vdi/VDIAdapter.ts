@@ -6,10 +6,10 @@
  * the browser. Supply one through `MeetingSessionConfiguration.vdiAdapter` and the
  * `vdiAdapter` option of `DefaultDeviceController`; without one the SDK uses the
  * browser. Every member but `name` is optional, and the SDK uses the browser for
- * what an adapter does not supply. See the VDI guide.
+ * what an adapter does not supply.
  */
 export default interface VDIAdapter {
-  /** Identifies the platform in logs. */
+  /** Identifies the platform in logs, for example when the peer connection is created. */
   readonly name: string;
 
   /** Creates the meeting's peer connection. Without it, `new RTCPeerConnection(configuration)`. */

@@ -8,7 +8,6 @@ import DeviceChangeObserver from '../devicechangeobserver/DeviceChangeObserver';
 import EventController from '../eventcontroller/EventController';
 import Logger from '../logger/Logger';
 import DefaultMediaDeviceFactory from '../mediadevicefactory/DefaultMediaDeviceFactory';
-import MediaDevices from '../mediadevices/MediaDevices';
 import DeviceControllerBasedMediaStreamBroker from '../mediastreambroker/DeviceControllerBasedMediaStreamBroker';
 import MediaStreamBrokerObserver from '../mediastreambrokerobserver/MediaStreamBrokerObserver';
 import AsyncScheduler from '../scheduler/AsyncScheduler';
@@ -69,7 +68,7 @@ export default class DefaultDeviceController
   private audioInputDestinationNode: MediaStreamAudioDestinationNode | null = null;
   private audioInputSourceNode: MediaStreamAudioSourceNode | null = null;
 
-  private mediaDeviceWrapper: typeof navigator.mediaDevices | undefined;
+  private mediaDeviceWrapper: MediaDevices | undefined;
   private onDeviceChangeCallback?: Thunk;
 
   private videoInputQualitySettings: VideoQualitySettings = null;
@@ -96,10 +95,11 @@ export default class DefaultDeviceController
     }
   };
 
-  private vdiAdapter?: VDIAdapter;
+  /** Acquires and lists devices on the endpoint when set. */
+  readonly vdiAdapter?: VDIAdapter;
 
-  private get mediaDevices(): Pick<globalThis.MediaDevices, 'getUserMedia' | 'enumerateDevices'> {
-    return MediaDevices.create(this.vdiAdapter);
+  private get mediaDevices(): Pick<MediaDevices, 'getUserMedia' | 'enumerateDevices'> {
+    return this.vdiAdapter?.mediaDevices ?? navigator.mediaDevices;
   }
 
   constructor(

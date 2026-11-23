@@ -3,7 +3,8 @@
 
 import * as sinon from 'sinon';
 
-import CitrixVDIAdapter, { CitrixUCSDK } from '../../src/vdi/CitrixVDIAdapter';
+import CitrixUCSDK from '../../../src/vdi/citrix/CitrixUCSDK';
+import CitrixVDIAdapter from '../../../src/vdi/citrix/CitrixVDIAdapter';
 
 // A UCSDK proxy track exposes `object_id()`; a browser track does not.
 export function citrixStream(): MediaStream {

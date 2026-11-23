@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import AudioVideoControllerState from '../audiovideocontroller/AudioVideoControllerState';
-import PeerConnection from '../peerconnection/PeerConnection';
 import RemovableObserver from '../removableobserver/RemovableObserver';
 import VideoTile from '../videotile/VideoTile';
 import VideoTileState from '../videotile/VideoTileState';
@@ -100,11 +99,14 @@ export default class CreatePeerConnectionTask extends BaseTask implements Remova
     if (this.context.peer) {
       this.context.logger.info('reusing peer connection');
     } else {
-      this.context.logger.info('creating new peer connection');
-      this.context.peer = PeerConnection.create(
-        configuration,
-        this.context.meetingSessionConfiguration?.vdiAdapter
+      const vdiAdapter = this.context.meetingSessionConfiguration?.vdiAdapter;
+      this.context.logger.info(
+        `creating new peer connection${vdiAdapter ? ` with ${vdiAdapter.name}` : ''}`
       );
+      this.context.peer =
+        vdiAdapter?.createPeerConnection?.(configuration) ??
+        // @ts-ignore
+        new RTCPeerConnection(configuration);
       this.addPeerConnectionEventLogger();
     }
 

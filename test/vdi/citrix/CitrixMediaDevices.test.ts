@@ -4,9 +4,10 @@
 import * as chai from 'chai';
 import * as sinon from 'sinon';
 
-import NoOpLogger from '../../src/logger/NoOpLogger';
-import CitrixMediaDevices from '../../src/vdi/CitrixMediaDevices';
-import CitrixVDIAdapter, { CitrixUCSDK } from '../../src/vdi/CitrixVDIAdapter';
+import NoOpLogger from '../../../src/logger/NoOpLogger';
+import CitrixMediaDevices from '../../../src/vdi/citrix/CitrixMediaDevices';
+import CitrixUCSDK from '../../../src/vdi/citrix/CitrixUCSDK';
+import CitrixVDIAdapter from '../../../src/vdi/citrix/CitrixVDIAdapter';
 import { makeUcsdk } from './FakeCitrixUCSDK';
 
 describe('CitrixMediaDevices', () => {
